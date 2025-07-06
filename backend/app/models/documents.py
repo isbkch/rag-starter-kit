@@ -63,6 +63,8 @@ class Document(BaseModel):
     total_chunks: int = 0
     processed_chunks: int = 0
     error_message: Optional[str] = None
+    error_code: Optional[str] = None
+    error_details: Dict[str, Any] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 

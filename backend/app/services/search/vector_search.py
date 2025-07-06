@@ -56,6 +56,7 @@ class VectorSearchEngine:
             List of search results
         """
         start_time = time.time()
+        metrics = get_metrics_collector()
         
         try:
             await self.initialize()
@@ -93,6 +94,10 @@ class VectorSearchEngine:
             search_time = time.time() - start_time
             logger.info(f"Vector search completed in {search_time:.2f}s, found {len(search_results)} results")
             
+            # Record successful vector search metrics
+            provider = getattr(self.vector_db, '__class__', {}).get('__name__', 'unknown')
+            metrics.record_vector_operation("search", provider, search_time, success=True)
+            
             return SearchResponse(
                 query=query,
                 results=search_results,
@@ -103,6 +108,13 @@ class VectorSearchEngine:
             
         except Exception as e:
             logger.error(f"Vector search failed: {e}")
+            
+            # Record failed vector search metrics
+            search_time = time.time() - start_time
+            provider = getattr(self.vector_db, '__class__', {}).get('__name__', 'unknown')
+            metrics.record_vector_operation("search", provider, search_time, success=False)
+            metrics.record_error(type(e).__name__, "vector.search")
+            
             raise
     
     async def search_by_embedding(

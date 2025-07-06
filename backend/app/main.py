@@ -17,6 +17,8 @@ from app.core.config import settings
 from app.api.v1.api import api_router
 from app.services.search.search_manager import get_search_manager
 from app.core.rate_limiting import rate_limit_middleware, custom_rate_limit_exceeded_handler
+from app.core.tracing import init_tracing, instrument_fastapi, shutdown_tracing
+from app.core.metrics import generate_metrics, get_metrics_collector, CONTENT_TYPE_LATEST
 from slowapi.errors import RateLimitExceeded
 
 # Configure logging
@@ -34,6 +36,10 @@ async def lifespan(app: FastAPI):
     
     # Startup
     try:
+        # Initialize OpenTelemetry tracing
+        init_tracing()
+        logger.info("OpenTelemetry tracing initialized")
+        
         # Initialize search manager
         search_manager = await get_search_manager(settings)
         logger.info("Search manager initialized successfully")
@@ -55,6 +61,10 @@ async def lifespan(app: FastAPI):
             if hasattr(app.state, 'search_manager'):
                 await app.state.search_manager.close()
                 logger.info("Search manager closed successfully")
+            
+            # Shutdown tracing
+            shutdown_tracing()
+            logger.info("Tracing shutdown completed")
         except Exception as e:
             logger.error(f"Error during shutdown: {e}")
 
@@ -94,15 +104,48 @@ app.middleware("http")(rate_limit_middleware)
 # Add rate limit exception handler
 app.add_exception_handler(RateLimitExceeded, custom_rate_limit_exceeded_handler)
 
-# Request timing middleware
+# Request timing and metrics middleware
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
-    """Add processing time header to responses."""
+    """Add processing time header and record metrics."""
     start_time = time.time()
-    response = await call_next(request)
-    process_time = time.time() - start_time
-    response.headers["X-Process-Time"] = str(process_time)
-    return response
+    status_code = 200
+    
+    try:
+        response = await call_next(request)
+        status_code = response.status_code
+        process_time = time.time() - start_time
+        response.headers["X-Process-Time"] = str(process_time)
+        
+        # Record metrics (skip for metrics endpoints to avoid recursion)
+        if not request.url.path.startswith('/metrics'):
+            get_metrics_collector().record_http_request(
+                method=request.method,
+                endpoint=request.url.path,
+                status_code=status_code,
+                duration=process_time
+            )
+        
+        return response
+    except Exception as e:
+        process_time = time.time() - start_time
+        status_code = 500
+        
+        # Record error metrics
+        if not request.url.path.startswith('/metrics'):
+            get_metrics_collector().record_http_request(
+                method=request.method,
+                endpoint=request.url.path,
+                status_code=status_code,
+                duration=process_time
+            )
+            get_metrics_collector().record_error(
+                error_type=type(e).__name__,
+                component='http_middleware',
+                severity='error'
+            )
+        
+        raise
 
 # Request logging middleware
 @app.middleware("http")
@@ -190,31 +233,28 @@ async def health_check():
         "timestamp": time.time()
     }
 
-# Metrics endpoint for monitoring
+# Prometheus metrics endpoint
 @app.get("/metrics")
 async def metrics():
-    """Basic metrics endpoint for monitoring systems."""
-    try:
-        # In a production system, you'd integrate with Prometheus or similar
-        import psutil
-        
-        return {
-            "timestamp": time.time(),
-            "cpu_percent": psutil.cpu_percent(),
-            "memory_percent": psutil.virtual_memory().percent,
-            "disk_percent": psutil.disk_usage('/').percent,
-            "status": "healthy"
-        }
-    except ImportError:
-        return {
-            "timestamp": time.time(),
-            "status": "monitoring_unavailable",
-            "message": "psutil not installed"
-        }
+    """Prometheus metrics endpoint."""
+    from fastapi import Response
+    
+    metrics_data = generate_metrics()
+    return Response(content=metrics_data, media_type=CONTENT_TYPE_LATEST)
+
+# Alternative metrics endpoint with JSON format
+@app.get("/metrics/json")
+async def metrics_json():
+    """JSON metrics endpoint for monitoring dashboards."""
+    collector = get_metrics_collector()
+    return collector.get_metrics_summary()
 
 
 # Include API router
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+# Instrument FastAPI for tracing
+instrument_fastapi(app)
 
 
 if __name__ == "__main__":

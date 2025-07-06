@@ -12,6 +12,8 @@ from app.services.search.embedding_service import EmbeddingService
 from app.services.search.vector_search import VectorSearchEngine
 from app.services.search.keyword_search import KeywordSearchEngine
 from app.services.search.hybrid_search import HybridSearchEngine
+from app.core.tracing import trace_search_operation
+from app.core.metrics import get_metrics_collector
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +88,7 @@ class SearchManager:
             logger.error(f"Error initializing search manager: {e}")
             raise
     
+    @trace_search_operation(search_type="dynamic", query="", limit=10)
     async def search(
         self,
         query: str,
@@ -95,26 +98,56 @@ class SearchManager:
         **kwargs
     ) -> SearchResponse:
         """Perform search using specified search type."""
+        import time
+        start_time = time.time()
+        metrics = get_metrics_collector()
+        
         if not self._initialized:
             await self.initialize()
         
         try:
+            result = None
             if search_type == SearchType.VECTOR:
-                return await self._search_vector(query, limit, filters, **kwargs)
+                result = await self._search_vector(query, limit, filters, **kwargs)
             elif search_type == SearchType.KEYWORD:
-                return await self._search_keyword(query, limit, **kwargs)
+                result = await self._search_keyword(query, limit, **kwargs)
             elif search_type == SearchType.HYBRID:
-                return await self._search_hybrid(query, limit, filters, **kwargs)
+                result = await self._search_hybrid(query, limit, filters, **kwargs)
             else:
                 raise ValueError(f"Unknown search type: {search_type}")
+            
+            # Record successful search metrics
+            duration = time.time() - start_time
+            metrics.record_search_operation(
+                search_type=search_type.value,
+                duration=duration,
+                result_count=len(result.results) if result.results else 0,
+                success=True
+            )
+            return result
                 
         except Exception as e:
             logger.error(f"Error performing {search_type} search: {e}")
+            
+            # Record failed search metrics
+            duration = time.time() - start_time
+            metrics.record_search_operation(
+                search_type=search_type.value,
+                duration=duration,
+                result_count=0,
+                success=False
+            )
+            metrics.record_error(
+                error_type=type(e).__name__,
+                component=f"search.{search_type.value}",
+                severity='error'
+            )
+            
             return SearchResponse(
                 query=query,
                 results=[],
                 total_results=0,
-                search_time=0.0,
+                search_time=duration,
                 search_type=search_type,
                 error=str(e)
             )
