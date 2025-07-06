@@ -37,6 +37,7 @@ export async function search(
     search_type: searchType,
     limit,
     min_score: MIN_SEARCH_SCORE,
+    stream: false
   };
   
   log('Searching with payload:', payload);
@@ -59,6 +60,114 @@ export async function search(
     return result;
   } catch (error) {
     logError('Search error:', error);
+    throw error;
+  }
+}
+
+export interface StreamingSearchCallbacks {
+  onMetadata?: (metadata: any) => void;
+  onResult?: (result: SearchResult, index: number) => void;
+  onSummary?: (summary: any) => void;
+  onError?: (error: string) => void;
+  onComplete?: () => void;
+}
+
+export async function searchStreaming(
+  query: string,
+  callbacks: StreamingSearchCallbacks,
+  searchType: "hybrid" | "vector" | "keyword" = "hybrid",
+  limit: number = MAX_SEARCH_RESULTS
+): Promise<void> {
+  const url = `${API_URL}/search/`;
+  const payload = {
+    query,
+    search_type: searchType,
+    limit,
+    min_score: MIN_SEARCH_SCORE,
+    stream: true
+  };
+  
+  log('Starting streaming search with payload:', payload);
+  
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    
+    if (!res.ok) {
+      const error = await res.text();
+      logError('Streaming search failed:', error);
+      throw new Error(`Streaming search failed: ${res.status} ${res.statusText}`);
+    }
+    
+    if (!res.body) {
+      throw new Error('Response body is null');
+    }
+    
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) {
+          break;
+        }
+        
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        
+        // Process all complete lines
+        for (let i = 0; i < lines.length - 1; i++) {
+          const line = lines[i].trim();
+          if (line) {
+            try {
+              const data = JSON.parse(line);
+              
+              switch (data.type) {
+                case 'metadata':
+                  log('Received metadata:', data);
+                  callbacks.onMetadata?.(data);
+                  break;
+                case 'result':
+                  log('Received result:', data.index, data.data);
+                  callbacks.onResult?.(data.data, data.index);
+                  break;
+                case 'summary':
+                  log('Received summary:', data);
+                  callbacks.onSummary?.(data);
+                  break;
+                case 'error':
+                  logError('Received error:', data.error);
+                  callbacks.onError?.(data.error);
+                  break;
+                default:
+                  log('Unknown message type:', data.type);
+              }
+            } catch (parseError) {
+              logError('Error parsing streaming response:', parseError, 'Line:', line);
+            }
+          }
+        }
+        
+        // Keep the last incomplete line in the buffer
+        buffer = lines[lines.length - 1];
+      }
+      
+      callbacks.onComplete?.();
+      log('Streaming search completed');
+      
+    } finally {
+      reader.releaseLock();
+    }
+    
+  } catch (error) {
+    logError('Streaming search error:', error);
+    callbacks.onError?.(error instanceof Error ? error.message : String(error));
     throw error;
   }
 }
