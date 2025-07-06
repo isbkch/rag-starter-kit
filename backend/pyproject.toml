@@ -2,7 +2,7 @@
 name = "rag-starter-kit-backend"
 version = "0.1.0"
 description = "Enterprise RAG Platform Backend - FastAPI application with vector search capabilities"
-requires-python = ">=3.11"
+requires-python = "~=3.11"
 dependencies = [
     # FastAPI and server
     "fastapi==0.104.1",
