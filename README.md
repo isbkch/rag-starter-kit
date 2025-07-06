@@ -96,7 +96,7 @@ A production-ready Retrieval-Augmented Generation (RAG) platform with enterprise
 ### Prerequisites
 
 - Python 3.9+
-- Node.js 18+
+- Node.js 20+
 - Docker & Docker Compose
 - Redis
 - PostgreSQL
@@ -106,7 +106,7 @@ A production-ready Retrieval-Augmented Generation (RAG) platform with enterprise
 1. **Clone the repository**
 
    ```bash
-   git clone <repository-url>
+   git clone git@github.com:isbkch/rag-starter-kit.git
    cd rag-starter-kit
    ```
 

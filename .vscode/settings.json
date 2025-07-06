@@ -1,0 +1,11 @@
+{
+  "cSpell.words": [
+    "FAISS",
+    "pdfplumber",
+    "Pydantic",
+    "Structlog",
+    "tiktoken",
+    "uvicorn",
+    "vectordb"
+  ]
+}
