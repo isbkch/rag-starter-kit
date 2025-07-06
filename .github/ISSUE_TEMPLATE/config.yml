@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 Documentation
+    url: https://github.com/isbkch/rag-starter-kit/tree/main/docs
+    about: Check the documentation for setup guides and architecture details
+  - name: 💬 Discussion Forum
+    url: https://github.com/isbkch/rag-starter-kit/discussions
+    about: Ask questions and discuss ideas with the community
+  - name: 🚀 API Documentation
+    url: http://localhost:8000/docs
+    about: Interactive API documentation (when running locally)

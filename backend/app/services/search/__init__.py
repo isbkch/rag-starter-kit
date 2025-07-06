@@ -10,10 +10,10 @@ from .search_manager import SearchManager, SearchType, get_search_manager
 
 __all__ = [
     "HybridSearchEngine",
-    "VectorSearchEngine", 
+    "VectorSearchEngine",
     "KeywordSearchEngine",
     "EmbeddingService",
     "SearchManager",
     "SearchType",
-    "get_search_manager"
-] 
+    "get_search_manager",
+]

@@ -10,6 +10,7 @@ from enum import Enum
 
 class DocumentType(str, Enum):
     """Supported document types."""
+
     PDF = "pdf"
     DOCX = "docx"
     MARKDOWN = "markdown"
@@ -18,6 +19,7 @@ class DocumentType(str, Enum):
 
 class DocumentStatus(str, Enum):
     """Document processing status."""
+
     PENDING = "pending"
     PROCESSING = "processing"
     COMPLETED = "completed"
@@ -26,6 +28,7 @@ class DocumentStatus(str, Enum):
 
 class DocumentMetadata(BaseModel):
     """Document metadata model."""
+
     title: Optional[str] = None
     author: Optional[str] = None
     created_date: Optional[datetime] = None
@@ -39,6 +42,7 @@ class DocumentMetadata(BaseModel):
 
 class DocumentChunk(BaseModel):
     """Document chunk model."""
+
     id: str
     document_id: str
     content: str
@@ -52,6 +56,7 @@ class DocumentChunk(BaseModel):
 
 class Document(BaseModel):
     """Document model."""
+
     id: str
     filename: str
     original_filename: str
@@ -71,6 +76,7 @@ class Document(BaseModel):
 
 class DocumentUploadRequest(BaseModel):
     """Document upload request model."""
+
     filename: str
     file_size: int
     document_type: DocumentType
@@ -79,6 +85,7 @@ class DocumentUploadRequest(BaseModel):
 
 class DocumentUploadResponse(BaseModel):
     """Document upload response model."""
+
     document_id: str
     upload_url: Optional[str] = None
     status: DocumentStatus
@@ -87,6 +94,7 @@ class DocumentUploadResponse(BaseModel):
 
 class DocumentProcessingRequest(BaseModel):
     """Document processing request model."""
+
     document_id: str
     chunk_size: Optional[int] = None
     chunk_overlap: Optional[int] = None
@@ -95,6 +103,7 @@ class DocumentProcessingRequest(BaseModel):
 
 class DocumentProcessingResponse(BaseModel):
     """Document processing response model."""
+
     document_id: str
     status: DocumentStatus
     total_chunks: int
@@ -104,8 +113,9 @@ class DocumentProcessingResponse(BaseModel):
 
 class DocumentListResponse(BaseModel):
     """Document list response model."""
+
     documents: List[Document]
     total: int
     page: int
     page_size: int
-    total_pages: int 
+    total_pages: int

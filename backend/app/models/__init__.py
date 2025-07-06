@@ -49,4 +49,4 @@ __all__ = [
     "SearchAggregation",
     "AdvancedSearchRequest",
     "SearchAnalytics",
-] 
+]

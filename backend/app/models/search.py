@@ -10,6 +10,7 @@ from enum import Enum
 
 class SearchType(str, Enum):
     """Search types."""
+
     VECTOR = "vector"
     KEYWORD = "keyword"
     HYBRID = "hybrid"
@@ -17,6 +18,7 @@ class SearchType(str, Enum):
 
 class SearchRequest(BaseModel):
     """Search request model."""
+
     query: str
     search_type: SearchType = SearchType.HYBRID
     max_results: int = Field(default=10, ge=1, le=100)
@@ -28,6 +30,7 @@ class SearchRequest(BaseModel):
 
 class SearchResult(BaseModel):
     """Individual search result model."""
+
     content: str
     score: float
     metadata: Dict[str, Any] = Field(default_factory=dict)
@@ -38,7 +41,7 @@ class SearchResult(BaseModel):
     similarity_score: Optional[float] = None
     keyword_score: Optional[float] = None
     highlights: List[str] = Field(default_factory=list)
-    
+
     # Legacy fields for backward compatibility
     id: Optional[str] = None
     document_id: Optional[str] = None
@@ -47,6 +50,7 @@ class SearchResult(BaseModel):
 
 class SearchResponse(BaseModel):
     """Search response model."""
+
     query: str
     search_type: str
     results: List[SearchResult]
@@ -57,19 +61,20 @@ class SearchResponse(BaseModel):
     suggestions: List[str] = Field(default_factory=list)
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     error: Optional[str] = None
-    
+
     # Legacy field for backward compatibility
     search_time_ms: Optional[float] = None
-    
+
     def __init__(self, **data):
         # Handle backward compatibility
-        if 'search_time_ms' in data and 'search_time' not in data:
-            data['search_time'] = data['search_time_ms'] / 1000.0
+        if "search_time_ms" in data and "search_time" not in data:
+            data["search_time"] = data["search_time_ms"] / 1000.0
         super().__init__(**data)
 
 
 class SearchFilter(BaseModel):
     """Search filter model."""
+
     field: str
     operator: str  # eq, ne, gt, lt, gte, lte, in, nin, contains
     value: Any
@@ -77,12 +82,14 @@ class SearchFilter(BaseModel):
 
 class SearchFacet(BaseModel):
     """Search facet model."""
+
     field: str
     values: List[Dict[str, Any]]  # [{"value": "pdf", "count": 10}]
 
 
 class SearchAggregation(BaseModel):
     """Search aggregation model."""
+
     name: str
     type: str  # terms, date_histogram, range
     field: str
@@ -91,6 +98,7 @@ class SearchAggregation(BaseModel):
 
 class AdvancedSearchRequest(BaseModel):
     """Advanced search request model."""
+
     query: str
     search_type: SearchType = SearchType.HYBRID
     max_results: int = Field(default=10, ge=1, le=100)
@@ -107,6 +115,7 @@ class AdvancedSearchRequest(BaseModel):
 
 class SearchAnalytics(BaseModel):
     """Search analytics model."""
+
     query: str
     search_type: SearchType
     results_count: int
@@ -115,4 +124,4 @@ class SearchAnalytics(BaseModel):
     session_id: Optional[str] = None
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     clicked_results: List[str] = Field(default_factory=list)
-    user_feedback: Optional[str] = None 
+    user_feedback: Optional[str] = None

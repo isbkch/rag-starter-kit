@@ -2,7 +2,7 @@
 name = "rag-starter-kit-backend"
 version = "0.1.0"
 description = "Enterprise RAG Platform Backend - FastAPI application with vector search capabilities"
-requires-python = ">=3.11"
+requires-python = "~=3.11"
 dependencies = [
     # FastAPI and server
     "fastapi==0.104.1",
@@ -14,9 +14,9 @@ dependencies = [
     # Database
     "sqlalchemy==2.0.23",
     "alembic==1.12.1",
-    "psycopg2-binary==2.9.9",
+    "psycopg",
     "redis[hiredis]==5.0.1",
-    "numpy==1.25.2",
+    "numpy==1.26.0",
 
     # Pydantic and validation
     "pydantic==2.5.0",
@@ -41,7 +41,7 @@ dependencies = [
     "openai>=1.6.1,<2.0.0",
     "sentence-transformers==2.2.2",
     "elasticsearch==8.11.0",
-    "faiss-cpu==1.7.4",
+    "faiss-cpu==1.11.0",
     "rank-bm25==0.2.2",
 
     # Text processing
@@ -94,6 +94,9 @@ dev = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
 
 [tool.uv]
 dev-dependencies = [

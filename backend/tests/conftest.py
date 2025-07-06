@@ -27,20 +27,20 @@ TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
 class TestSettings(Settings):
     """Test settings override."""
-    
+
     DATABASE_URL: str = TEST_DATABASE_URL
     REDIS_URL: str = "redis://localhost:6379/15"  # Use different DB for tests
-    
+
     # Test OpenAI settings
     OPENAI_API_KEY: str = "test-openai-key"
-    
+
     # Vector DB settings for tests
     VECTOR_DB_PROVIDER: str = "chroma"
     VECTOR_DB_COLLECTION: str = "test_collection"
-    
+
     # Disable rate limiting in tests
     ENABLE_RATE_LIMITING: bool = False
-    
+
     # Test-specific settings
     TESTING: bool = True
     LOG_LEVEL: str = "DEBUG"
@@ -69,12 +69,12 @@ async def async_engine():
         connect_args={"check_same_thread": False},
         echo=False,
     )
-    
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    
+
     yield engine
-    
+
     await engine.dispose()
 
 
@@ -82,11 +82,9 @@ async def async_engine():
 async def db_session(async_engine) -> AsyncGenerator[AsyncSession, None]:
     """Create database session for tests."""
     async_session = sessionmaker(
-        bind=async_engine, 
-        class_=AsyncSession, 
-        expire_on_commit=False
+        bind=async_engine, class_=AsyncSession, expire_on_commit=False
     )
-    
+
     async with async_session() as session:
         yield session
 
@@ -106,7 +104,10 @@ def mock_redis():
     mock_redis.set.return_value = True
     mock_redis.incr.return_value = 1
     mock_redis.expire.return_value = True
-    mock_redis.pipeline.return_value.__aenter__.return_value.execute.return_value = [1, True]
+    mock_redis.pipeline.return_value.__aenter__.return_value.execute.return_value = [
+        1,
+        True,
+    ]
     return mock_redis
 
 
@@ -141,7 +142,7 @@ def vector_db_config() -> VectorDBConfig:
         provider="chroma",
         collection_name="test_collection",
         embedding_dimension=1536,
-        distance_metric="cosine"
+        distance_metric="cosine",
     )
 
 
@@ -162,14 +163,14 @@ def sample_documents():
             "id": "doc1",
             "title": "Introduction to Machine Learning",
             "content": "Machine learning is a subset of artificial intelligence that focuses on algorithms that can learn from data.",
-            "metadata": {"author": "John Doe", "category": "AI"}
+            "metadata": {"author": "John Doe", "category": "AI"},
         },
         {
-            "id": "doc2", 
+            "id": "doc2",
             "title": "Deep Learning Fundamentals",
             "content": "Deep learning uses neural networks with multiple layers to model and understand complex patterns in data.",
-            "metadata": {"author": "Jane Smith", "category": "Deep Learning"}
-        }
+            "metadata": {"author": "Jane Smith", "category": "Deep Learning"},
+        },
     ]
 
 
@@ -184,17 +185,17 @@ def sample_chunks():
             "chunk_index": 0,
             "start_char": 0,
             "end_char": 55,
-            "metadata": {"document_title": "Introduction to Machine Learning"}
+            "metadata": {"document_title": "Introduction to Machine Learning"},
         },
         {
             "chunk_id": "chunk2",
-            "document_id": "doc1", 
+            "document_id": "doc1",
             "content": "It focuses on algorithms that can learn from data.",
             "chunk_index": 1,
             "start_char": 56,
             "end_char": 104,
-            "metadata": {"document_title": "Introduction to Machine Learning"}
-        }
+            "metadata": {"document_title": "Introduction to Machine Learning"},
+        },
     ]
 
 
@@ -203,7 +204,7 @@ def sample_embeddings():
     """Sample embeddings for testing."""
     return [
         [0.1, 0.2, 0.3] * 512,  # 1536 dimensions
-        [0.4, 0.5, 0.6] * 512   # 1536 dimensions
+        [0.4, 0.5, 0.6] * 512,  # 1536 dimensions
     ]
 
 
@@ -214,7 +215,7 @@ def sample_search_query():
         "query": "What is machine learning?",
         "search_type": "hybrid",
         "max_results": 10,
-        "similarity_threshold": 0.7
+        "similarity_threshold": 0.7,
     }
 
 
@@ -223,7 +224,7 @@ def sample_search_query():
 async def setup_test_data(db_session, sample_documents):
     """Set up test data in the database."""
     from app.models.database import Document, DocumentChunk
-    
+
     # Add documents
     for doc_data in sample_documents:
         document = Document(
@@ -232,10 +233,10 @@ async def setup_test_data(db_session, sample_documents):
             content=doc_data["content"],
             file_type="text",
             file_size=len(doc_data["content"]),
-            metadata_=doc_data["metadata"]
+            metadata_=doc_data["metadata"],
         )
         db_session.add(document)
-    
+
     await db_session.commit()
     return sample_documents
 
@@ -243,14 +244,14 @@ async def setup_test_data(db_session, sample_documents):
 # Test utilities
 class MockResponse:
     """Mock HTTP response for testing."""
-    
+
     def __init__(self, json_data, status_code=200):
         self.json_data = json_data
         self.status_code = status_code
-    
+
     def json(self):
         return self.json_data
-    
+
     def raise_for_status(self):
         if self.status_code >= 400:
             raise Exception(f"HTTP {self.status_code}")
@@ -268,7 +269,7 @@ def assert_valid_search_result(result):
     required_fields = ["id", "score", "content"]
     for field in required_fields:
         assert field in result
-    
+
     assert isinstance(result["score"], (int, float))
     assert 0 <= result["score"] <= 1
     assert isinstance(result["content"], str)
@@ -280,8 +281,8 @@ def performance_threshold():
     """Performance thresholds for testing."""
     return {
         "embedding_generation": 2.0,  # seconds
-        "vector_search": 1.0,         # seconds
-        "document_ingestion": 5.0,    # seconds
+        "vector_search": 1.0,  # seconds
+        "document_ingestion": 5.0,  # seconds
     }
 
 
@@ -291,12 +292,16 @@ def mock_external_services(monkeypatch, mock_redis, mock_openai_client):
     """Mock all external services."""
     # Mock Redis
     monkeypatch.setattr("app.services.search.embedding_service.redis", mock_redis)
-    
+
     # Mock OpenAI
-    monkeypatch.setattr("app.services.search.embedding_service.openai.OpenAI", lambda **kwargs: mock_openai_client)
-    
+    monkeypatch.setattr(
+        "app.services.search.embedding_service.openai.OpenAI",
+        lambda **kwargs: mock_openai_client,
+    )
+
     # Mock vector databases
     from app.services.vectordb import factory
+
     monkeypatch.setattr(factory, "create_vector_db", lambda **kwargs: mock_vector_db())
 
 
@@ -305,7 +310,7 @@ def mock_external_services(monkeypatch, mock_redis, mock_openai_client):
 async def cleanup_redis(mock_redis):
     """Cleanup Redis after tests."""
     yield
-    if hasattr(mock_redis, 'flushdb'):
+    if hasattr(mock_redis, "flushdb"):
         await mock_redis.flushdb()
 
 
@@ -314,16 +319,16 @@ def cleanup_files():
     """Cleanup temporary files after tests."""
     import tempfile
     import shutil
-    
+
     temp_dirs = []
-    
+
     def create_temp_dir():
         temp_dir = tempfile.mkdtemp()
         temp_dirs.append(temp_dir)
         return temp_dir
-    
+
     yield create_temp_dir
-    
+
     # Cleanup
     for temp_dir in temp_dirs:
         try:
@@ -334,6 +339,7 @@ def cleanup_files():
 
 # Test markers
 pytest_plugins = []
+
 
 # Custom markers
 def pytest_configure(config):
