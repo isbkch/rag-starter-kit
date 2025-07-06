@@ -29,7 +29,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # Install dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv pip sync pyproject.toml
+    uv sync --locked --no-dev
 
 # Production stage
 FROM python:3.11-slim as production
