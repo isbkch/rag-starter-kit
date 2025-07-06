@@ -1,5 +1,8 @@
 {
   "cSpell.words": [
+    "alertmanager",
+    "alertmanagers",
+    "chromadb",
     "FAISS",
     "pdfplumber",
     "Pydantic",

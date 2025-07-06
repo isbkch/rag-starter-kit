@@ -1,79 +1,63 @@
 """
-Embedding service for generating vector embeddings.
+Embedding service implementation with multiple provider support and caching.
 """
 
 import logging
-from typing import List, Optional, Dict, Any
+import hashlib
 import asyncio
+from typing import List, Optional, Dict, Any
 from abc import ABC, abstractmethod
 
 import openai
-from sentence_transformers import SentenceTransformer
 import numpy as np
+from sentence_transformers import SentenceTransformer
+import redis.asyncio as redis
 
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
 
-class BaseEmbeddingProvider(ABC):
-    """Base class for embedding providers."""
+class EmbeddingProvider(ABC):
+    """Abstract base class for embedding providers."""
     
     @abstractmethod
-    async def embed_texts(self, texts: List[str]) -> List[List[float]]:
-        """Generate embeddings for a list of texts."""
-        pass
-    
-    @abstractmethod
-    async def embed_text(self, text: str) -> List[float]:
-        """Generate embedding for a single text."""
+    async def get_embeddings(self, texts: List[str]) -> List[List[float]]:
+        """Get embeddings for a list of texts."""
         pass
     
     @abstractmethod
     def get_embedding_dimension(self) -> int:
-        """Get the dimension of embeddings."""
+        """Get the dimension of embeddings produced by this provider."""
         pass
 
 
-class OpenAIEmbeddingProvider(BaseEmbeddingProvider):
+class OpenAIEmbeddingProvider(EmbeddingProvider):
     """OpenAI embedding provider."""
     
     def __init__(self, api_key: str, model: str = "text-embedding-ada-002"):
         self.client = openai.AsyncOpenAI(api_key=api_key)
         self.model = model
-        self._dimension = 1536 if model == "text-embedding-ada-002" else 1536
+        self._dimension = 1536 if "ada-002" in model else 1536  # Default for most models
     
-    async def embed_texts(self, texts: List[str]) -> List[List[float]]:
-        """Generate embeddings for a list of texts."""
+    async def get_embeddings(self, texts: List[str]) -> List[List[float]]:
+        """Get embeddings from OpenAI API."""
         try:
-            # OpenAI API supports batch embedding
             response = await self.client.embeddings.create(
                 model=self.model,
-                input=texts,
+                input=texts
             )
-            
-            # Extract embeddings from response
-            embeddings = [item.embedding for item in response.data]
-            
-            logger.debug(f"Generated {len(embeddings)} embeddings using OpenAI")
-            return embeddings
-            
+            return [embedding.embedding for embedding in response.data]
         except Exception as e:
-            logger.error(f"Failed to generate embeddings with OpenAI: {e}")
+            logger.error(f"Error getting OpenAI embeddings: {e}")
             raise
     
-    async def embed_text(self, text: str) -> List[float]:
-        """Generate embedding for a single text."""
-        embeddings = await self.embed_texts([text])
-        return embeddings[0]
-    
     def get_embedding_dimension(self) -> int:
-        """Get the dimension of embeddings."""
         return self._dimension
 
 
-class SentenceTransformerProvider(BaseEmbeddingProvider):
-    """Sentence Transformer embedding provider."""
+class SentenceTransformerProvider(EmbeddingProvider):
+    """Sentence Transformers embedding provider for local embeddings."""
     
     def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
         self.model_name = model_name
@@ -81,243 +65,298 @@ class SentenceTransformerProvider(BaseEmbeddingProvider):
         self._dimension = None
     
     def _load_model(self):
-        """Load the sentence transformer model."""
+        """Lazy load the model."""
         if self.model is None:
             self.model = SentenceTransformer(self.model_name)
-            # Get dimension from model
             self._dimension = self.model.get_sentence_embedding_dimension()
     
-    async def embed_texts(self, texts: List[str]) -> List[List[float]]:
-        """Generate embeddings for a list of texts."""
+    async def get_embeddings(self, texts: List[str]) -> List[List[float]]:
+        """Get embeddings using sentence transformers."""
         try:
             self._load_model()
             
             # Run in thread pool to avoid blocking
             loop = asyncio.get_event_loop()
             embeddings = await loop.run_in_executor(
-                None, self.model.encode, texts
+                None, 
+                self.model.encode, 
+                texts
             )
             
-            # Convert to list of lists
-            embeddings_list = [embedding.tolist() for embedding in embeddings]
-            
-            logger.debug(f"Generated {len(embeddings_list)} embeddings using SentenceTransformer")
-            return embeddings_list
-            
+            return embeddings.tolist()
         except Exception as e:
-            logger.error(f"Failed to generate embeddings with SentenceTransformer: {e}")
+            logger.error(f"Error getting Sentence Transformer embeddings: {e}")
             raise
     
-    async def embed_text(self, text: str) -> List[float]:
-        """Generate embedding for a single text."""
-        embeddings = await self.embed_texts([text])
-        return embeddings[0]
-    
     def get_embedding_dimension(self) -> int:
-        """Get the dimension of embeddings."""
         if self._dimension is None:
             self._load_model()
         return self._dimension
 
 
+class EmbeddingCache:
+    """Redis-based embedding cache."""
+    
+    def __init__(self, redis_url: str, ttl: int = 86400 * 7):  # 7 days default TTL
+        self.redis_url = redis_url
+        self.ttl = ttl
+        self.redis_client = None
+    
+    async def connect(self):
+        """Connect to Redis."""
+        try:
+            self.redis_client = redis.from_url(
+                self.redis_url,
+                decode_responses=False
+            )
+            await self.redis_client.ping()
+            logger.info("Connected to Redis for embedding cache")
+        except Exception as e:
+            logger.warning(f"Failed to connect to Redis: {e}")
+            self.redis_client = None
+    
+    def _get_cache_key(self, text: str, model: str) -> str:
+        """Generate cache key for text and model."""
+        text_hash = hashlib.md5(text.encode()).hexdigest()
+        return f"embedding:{model}:{text_hash}"
+    
+    async def get(self, text: str, model: str) -> Optional[List[float]]:
+        """Get embedding from cache."""
+        if not self.redis_client:
+            return None
+        
+        try:
+            key = self._get_cache_key(text, model)
+            cached_data = await self.redis_client.get(key)
+            
+            if cached_data:
+                # Deserialize numpy array
+                embedding = np.frombuffer(cached_data, dtype=np.float32).tolist()
+                logger.debug(f"Cache hit for text hash: {key}")
+                return embedding
+            
+            return None
+        except Exception as e:
+            logger.warning(f"Error getting from cache: {e}")
+            return None
+    
+    async def set(self, text: str, model: str, embedding: List[float]):
+        """Store embedding in cache."""
+        if not self.redis_client:
+            return
+        
+        try:
+            key = self._get_cache_key(text, model)
+            # Serialize as numpy array for efficient storage
+            embedding_bytes = np.array(embedding, dtype=np.float32).tobytes()
+            
+            await self.redis_client.setex(
+                key,
+                self.ttl,
+                embedding_bytes
+            )
+            logger.debug(f"Cached embedding for text hash: {key}")
+        except Exception as e:
+            logger.warning(f"Error setting cache: {e}")
+    
+    async def get_stats(self) -> Dict[str, Any]:
+        """Get cache statistics."""
+        if not self.redis_client:
+            return {"cache_enabled": False}
+        
+        try:
+            info = await self.redis_client.info("memory")
+            keyspace = await self.redis_client.info("keyspace")
+            
+            # Count embedding keys
+            embedding_keys = 0
+            async for key in self.redis_client.scan_iter(match="embedding:*"):
+                embedding_keys += 1
+            
+            return {
+                "cache_enabled": True,
+                "memory_usage_mb": round(info.get("used_memory", 0) / 1024 / 1024, 2),
+                "embedding_keys": embedding_keys,
+                "keyspace_info": keyspace
+            }
+        except Exception as e:
+            logger.warning(f"Error getting cache stats: {e}")
+            return {"cache_enabled": True, "error": str(e)}
+    
+    async def close(self):
+        """Close Redis connection."""
+        if self.redis_client:
+            await self.redis_client.close()
+
+
 class EmbeddingService:
-    """Main embedding service with multiple provider support."""
+    """Main embedding service with provider abstraction and caching."""
     
-    def __init__(self, provider: str = "openai", **kwargs):
-        self.provider_name = provider.lower()
-        self.provider = self._create_provider(provider, **kwargs)
-        self._cache = {}  # Simple in-memory cache
-        self.cache_enabled = kwargs.get('cache_enabled', True)
-        self.max_cache_size = kwargs.get('max_cache_size', 1000)
-    
-    def _create_provider(self, provider: str, **kwargs) -> BaseEmbeddingProvider:
-        """Create embedding provider instance."""
-        provider = provider.lower()
+    def __init__(
+        self,
+        provider: str = "openai",
+        model_name: str = "text-embedding-ada-002",
+        api_key: Optional[str] = None,
+        cache_embeddings: bool = True,
+        batch_size: int = 100
+    ):
+        self.provider = provider
+        self.model_name = model_name
+        self.cache_embeddings = cache_embeddings
+        self.batch_size = batch_size
         
+        # Initialize provider
         if provider == "openai":
-            api_key = kwargs.get('api_key', settings.OPENAI_API_KEY)
-            model = kwargs.get('model', settings.EMBEDDING_MODEL)
-            
             if not api_key:
-                raise ValueError("OpenAI API key is required")
-            
-            return OpenAIEmbeddingProvider(api_key=api_key, model=model)
-        
-        elif provider == "sentence-transformer":
-            model_name = kwargs.get('model_name', 'all-MiniLM-L6-v2')
-            return SentenceTransformerProvider(model_name=model_name)
-        
+                raise ValueError("OpenAI API key is required for OpenAI provider")
+            self.embedding_provider = OpenAIEmbeddingProvider(api_key, model_name)
+        elif provider == "sentence_transformers":
+            self.embedding_provider = SentenceTransformerProvider(model_name)
         else:
             raise ValueError(f"Unsupported embedding provider: {provider}")
+        
+        # Initialize cache
+        self.cache = None
+        if cache_embeddings:
+            self.cache = EmbeddingCache(settings.REDIS_URL)
     
-    async def embed_text(self, text: str) -> List[float]:
-        """Generate embedding for a single text."""
-        if not text.strip():
-            raise ValueError("Text cannot be empty")
-        
-        # Check cache first
-        if self.cache_enabled and text in self._cache:
-            logger.debug("Retrieved embedding from cache")
-            return self._cache[text]
-        
-        # Generate embedding
-        embedding = await self.provider.embed_text(text)
-        
-        # Cache the result
-        if self.cache_enabled:
-            self._update_cache(text, embedding)
-        
-        return embedding
+    async def initialize(self):
+        """Initialize the embedding service."""
+        if self.cache:
+            await self.cache.connect()
+        logger.info(f"Embedding service initialized with provider: {self.provider}")
     
-    async def embed_texts(self, texts: List[str]) -> List[List[float]]:
-        """Generate embeddings for a list of texts."""
+    async def get_embeddings(self, texts: List[str]) -> List[List[float]]:
+        """Get embeddings for a list of texts with caching."""
         if not texts:
             return []
         
-        # Filter out empty texts
-        valid_texts = [text for text in texts if text.strip()]
-        if not valid_texts:
-            raise ValueError("No valid texts provided")
+        embeddings = []
+        texts_to_compute = []
+        indices_to_compute = []
         
-        # Check cache for existing embeddings
-        cached_embeddings = {}
-        texts_to_embed = []
-        
-        if self.cache_enabled:
-            for text in valid_texts:
-                if text in self._cache:
-                    cached_embeddings[text] = self._cache[text]
-                else:
-                    texts_to_embed.append(text)
-        else:
-            texts_to_embed = valid_texts
-        
-        # Generate embeddings for uncached texts
-        new_embeddings = {}
-        if texts_to_embed:
-            embeddings = await self.provider.embed_texts(texts_to_embed)
-            new_embeddings = dict(zip(texts_to_embed, embeddings))
+        # Check cache for each text
+        for i, text in enumerate(texts):
+            if self.cache:
+                cached_embedding = await self.cache.get(text, self.model_name)
+                if cached_embedding:
+                    embeddings.append(cached_embedding)
+                    continue
             
-            # Update cache
-            if self.cache_enabled:
-                for text, embedding in new_embeddings.items():
-                    self._update_cache(text, embedding)
+            # Mark for computation
+            embeddings.append(None)  # Placeholder
+            texts_to_compute.append(text)
+            indices_to_compute.append(i)
         
-        # Combine cached and new embeddings in original order
-        result = []
-        for text in valid_texts:
-            if text in cached_embeddings:
-                result.append(cached_embeddings[text])
-            else:
-                result.append(new_embeddings[text])
-        
-        return result
-    
-    async def embed_document_chunks(self, chunks: List[str]) -> List[List[float]]:
-        """Generate embeddings for document chunks with batching."""
-        if not chunks:
-            return []
-        
-        # Process in batches to avoid API limits
-        batch_size = 100  # Adjust based on provider limits
-        all_embeddings = []
-        
-        for i in range(0, len(chunks), batch_size):
-            batch = chunks[i:i + batch_size]
-            batch_embeddings = await self.embed_texts(batch)
-            all_embeddings.extend(batch_embeddings)
+        # Compute embeddings for uncached texts
+        if texts_to_compute:
+            logger.info(f"Computing embeddings for {len(texts_to_compute)} texts")
             
-            # Add small delay between batches to avoid rate limits
-            if i + batch_size < len(chunks):
-                await asyncio.sleep(0.1)
+            # Process in batches
+            computed_embeddings = []
+            for i in range(0, len(texts_to_compute), self.batch_size):
+                batch_texts = texts_to_compute[i:i + self.batch_size]
+                batch_embeddings = await self.embedding_provider.get_embeddings(batch_texts)
+                computed_embeddings.extend(batch_embeddings)
+                
+                # Cache the computed embeddings
+                if self.cache:
+                    for text, embedding in zip(batch_texts, batch_embeddings):
+                        await self.cache.set(text, self.model_name, embedding)
+            
+            # Fill in the computed embeddings
+            for i, embedding in zip(indices_to_compute, computed_embeddings):
+                embeddings[i] = embedding
         
-        return all_embeddings
+        return embeddings
     
-    def _update_cache(self, text: str, embedding: List[float]):
-        """Update the embedding cache."""
-        if len(self._cache) >= self.max_cache_size:
-            # Remove oldest entry (simple FIFO)
-            oldest_key = next(iter(self._cache))
-            del self._cache[oldest_key]
-        
-        self._cache[text] = embedding
-    
-    def clear_cache(self):
-        """Clear the embedding cache."""
-        self._cache.clear()
-    
-    def get_cache_stats(self) -> Dict[str, Any]:
-        """Get cache statistics."""
-        return {
-            'cache_size': len(self._cache),
-            'max_cache_size': self.max_cache_size,
-            'cache_enabled': self.cache_enabled,
-            'hit_rate': getattr(self, '_cache_hits', 0) / max(getattr(self, '_cache_requests', 1), 1),
-        }
+    async def get_embedding(self, text: str) -> List[float]:
+        """Get embedding for a single text."""
+        embeddings = await self.get_embeddings([text])
+        return embeddings[0] if embeddings else []
     
     def get_embedding_dimension(self) -> int:
         """Get the dimension of embeddings."""
-        return self.provider.get_embedding_dimension()
+        return self.embedding_provider.get_embedding_dimension()
     
-    def get_provider_info(self) -> Dict[str, Any]:
-        """Get information about the current provider."""
-        return {
-            'provider': self.provider_name,
-            'dimension': self.get_embedding_dimension(),
-            'cache_enabled': self.cache_enabled,
-            'cache_size': len(self._cache),
+    async def health_check(self) -> Dict[str, Any]:
+        """Perform health check on the embedding service."""
+        health = {
+            "provider": self.provider,
+            "model": self.model_name,
+            "dimension": self.get_embedding_dimension(),
+            "cache_enabled": self.cache is not None
         }
-    
-    async def compute_similarity(self, embedding1: List[float], embedding2: List[float]) -> float:
-        """Compute cosine similarity between two embeddings."""
+        
         try:
-            # Convert to numpy arrays
-            a = np.array(embedding1)
-            b = np.array(embedding2)
-            
-            # Compute cosine similarity
-            dot_product = np.dot(a, b)
-            norm_a = np.linalg.norm(a)
-            norm_b = np.linalg.norm(b)
-            
-            if norm_a == 0 or norm_b == 0:
-                return 0.0
-            
-            similarity = dot_product / (norm_a * norm_b)
-            return float(similarity)
-            
+            # Test with a simple text
+            test_embedding = await self.get_embedding("test")
+            health["status"] = "healthy"
+            health["test_embedding_length"] = len(test_embedding)
         except Exception as e:
-            logger.error(f"Failed to compute similarity: {e}")
-            return 0.0
+            health["status"] = "unhealthy"
+            health["error"] = str(e)
+        
+        # Get cache stats if available
+        if self.cache:
+            cache_stats = await self.cache.get_stats()
+            health["cache_stats"] = cache_stats
+        
+        return health
     
-    async def find_similar_texts(
-        self,
-        query_text: str,
-        candidate_texts: List[str],
-        top_k: int = 5,
-        threshold: float = 0.7,
-    ) -> List[Dict[str, Any]]:
-        """Find similar texts to a query."""
-        try:
-            # Generate embeddings
-            query_embedding = await self.embed_text(query_text)
-            candidate_embeddings = await self.embed_texts(candidate_texts)
-            
-            # Compute similarities
-            similarities = []
-            for i, candidate_embedding in enumerate(candidate_embeddings):
-                similarity = await self.compute_similarity(query_embedding, candidate_embedding)
-                if similarity >= threshold:
-                    similarities.append({
-                        'text': candidate_texts[i],
-                        'similarity': similarity,
-                        'index': i,
-                    })
-            
-            # Sort by similarity and return top k
-            similarities.sort(key=lambda x: x['similarity'], reverse=True)
-            return similarities[:top_k]
-            
-        except Exception as e:
-            logger.error(f"Failed to find similar texts: {e}")
-            return [] 
+    async def get_stats(self) -> Dict[str, Any]:
+        """Get embedding service statistics."""
+        stats = {
+            "provider": self.provider,
+            "model": self.model_name,
+            "dimension": self.get_embedding_dimension(),
+            "batch_size": self.batch_size,
+            "cache_enabled": self.cache is not None
+        }
+        
+        if self.cache:
+            cache_stats = await self.cache.get_stats()
+            stats.update(cache_stats)
+        
+        return stats
+    
+    async def close(self):
+        """Close the embedding service."""
+        if self.cache:
+            await self.cache.close()
+        logger.info("Embedding service closed")
+
+
+# Global embedding service instance
+_embedding_service = None
+
+
+async def get_embedding_service(
+    provider: str = None,
+    model_name: str = None,
+    api_key: str = None,
+    cache_embeddings: bool = None,
+    batch_size: int = None
+) -> EmbeddingService:
+    """Get or create global embedding service instance."""
+    global _embedding_service
+    
+    if _embedding_service is None:
+        # Use settings defaults if not provided
+        provider = provider or settings.EMBEDDING_PROVIDER
+        model_name = model_name or settings.EMBEDDING_MODEL
+        api_key = api_key or settings.OPENAI_API_KEY
+        cache_embeddings = cache_embeddings if cache_embeddings is not None else settings.CACHE_EMBEDDINGS
+        batch_size = batch_size or settings.EMBEDDING_BATCH_SIZE
+        
+        _embedding_service = EmbeddingService(
+            provider=provider,
+            model_name=model_name,
+            api_key=api_key,
+            cache_embeddings=cache_embeddings,
+            batch_size=batch_size
+        )
+        
+        await _embedding_service.initialize()
+    
+    return _embedding_service

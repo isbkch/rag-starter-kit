@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     
     # Vector Database
     VECTOR_DB_PROVIDER: str = Field(default="chroma", env="VECTOR_DB_PROVIDER")
+    VECTOR_DB_COLLECTION: str = Field(default="documents", env="VECTOR_DB_COLLECTION")
     
     # Pinecone
     PINECONE_API_KEY: Optional[str] = Field(default=None, env="PINECONE_API_KEY")
@@ -50,13 +51,17 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: Optional[str] = Field(default=None, env="OPENAI_API_KEY")
     
     # Embeddings
+    EMBEDDING_PROVIDER: str = Field(default="openai", env="EMBEDDING_PROVIDER")
     EMBEDDING_MODEL: str = Field(default="text-embedding-ada-002", env="EMBEDDING_MODEL")
     EMBEDDING_DIMENSIONS: int = Field(default=1536, env="EMBEDDING_DIMENSIONS")
+    CACHE_EMBEDDINGS: bool = Field(default=True, env="CACHE_EMBEDDINGS")
+    EMBEDDING_BATCH_SIZE: int = Field(default=100, env="EMBEDDING_BATCH_SIZE")
     
     # Document Processing
     MAX_FILE_SIZE: int = Field(default=50 * 1024 * 1024, env="MAX_FILE_SIZE")  # 50MB
     CHUNK_SIZE: int = Field(default=1000, env="CHUNK_SIZE")
     CHUNK_OVERLAP: int = Field(default=200, env="CHUNK_OVERLAP")
+    CHUNKING_STRATEGY: str = Field(default="recursive", env="CHUNKING_STRATEGY")
     
     # Search
     MAX_SEARCH_RESULTS: int = Field(default=10, env="MAX_SEARCH_RESULTS")
@@ -69,6 +74,14 @@ class Settings(BaseSettings):
     # Monitoring
     ENABLE_METRICS: bool = Field(default=True, env="ENABLE_METRICS")
     METRICS_PORT: int = Field(default=8001, env="METRICS_PORT")
+    
+    # Celery Configuration
+    CELERY_BROKER_URL: str = Field(default="redis://localhost:6379", env="CELERY_BROKER_URL")
+    CELERY_RESULT_BACKEND: str = Field(default="redis://localhost:6379", env="CELERY_RESULT_BACKEND")
+    
+    # Logging
+    LOG_LEVEL: str = Field(default="INFO", env="LOG_LEVEL")
+    LOG_FORMAT: str = Field(default="json", env="LOG_FORMAT")
     
     # CORS
     BACKEND_CORS_ORIGINS: List[str] = Field(
@@ -87,4 +100,4 @@ def get_settings() -> Settings:
     return Settings()
 
 
-settings = get_settings() 
+settings = get_settings()
