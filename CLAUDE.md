@@ -20,21 +20,33 @@ This is the Enterprise RAG Platform Starter Kit - a production-ready Retrieval-A
 
 ```bash
 # Start development server
-cd backend && uvicorn app.main:app --reload
+cd backend && uv run uvicorn app.main:app --reload
 
 # Run tests with coverage
-cd backend && pytest --cov=app --cov-report=html
+cd backend && uv run pytest --cov=app --cov-report=html
 
 # Run specific test types
-cd backend && pytest -m unit          # Unit tests only
-cd backend && pytest -m integration   # Integration tests only
-cd backend && pytest -m performance   # Performance tests only
+cd backend && uv run pytest -m unit          # Unit tests only
+cd backend && uv run pytest -m integration   # Integration tests only
+cd backend && uv run pytest -m performance   # Performance tests only
 
 # Code formatting and linting
-cd backend && black .
-cd backend && isort .
-cd backend && flake8
-cd backend && mypy .
+cd backend && uv run black .
+cd backend && uv run isort .
+cd backend && uv run flake8
+cd backend && uv run mypy .
+
+# Install dependencies
+cd backend && uv sync
+
+# Install development dependencies
+cd backend && uv sync --dev
+
+# Add new dependencies
+cd backend && uv add <package-name>
+
+# Add development dependencies
+cd backend && uv add --dev <package-name>
 ```
 
 ### Frontend Development

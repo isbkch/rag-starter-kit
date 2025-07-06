@@ -4,23 +4,32 @@ FROM python:3.11-slim as builder
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    UV_LINK_MODE=copy
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Create and activate virtual environment
-RUN python -m venv /opt/venv
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Set working directory
+WORKDIR /app
+
+# Copy project files for dependency resolution
+COPY pyproject.toml .
+
+# Create virtual environment and install dependencies
+RUN uv venv /opt/venv
+ENV VIRTUAL_ENV=/opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Copy requirements and install Python dependencies
-COPY requirements.txt .
-RUN pip install --upgrade pip && \
-    pip install -r requirements.txt
+# Install dependencies
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip sync pyproject.toml
 
 # Production stage
 FROM python:3.11-slim as production
@@ -28,6 +37,7 @@ FROM python:3.11-slim as production
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
+    VIRTUAL_ENV=/opt/venv \
     PATH="/opt/venv/bin:$PATH"
 
 # Install runtime dependencies
