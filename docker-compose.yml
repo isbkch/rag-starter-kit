@@ -59,7 +59,7 @@ services:
     image: ghcr.io/chroma-core/chroma:latest
     container_name: rag-chromadb
     ports:
-      - "8000:8000"
+      - "8002:8000"
     volumes:
       - chromadb_data:/chroma/chroma
     environment:
