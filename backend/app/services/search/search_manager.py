@@ -14,6 +14,7 @@ from app.services.search.keyword_search import KeywordSearchEngine
 from app.services.search.hybrid_search import HybridSearchEngine
 from app.core.tracing import trace_search_operation
 from app.core.metrics import get_metrics_collector
+from app.core.cache import get_cache_service
 
 logger = logging.getLogger(__name__)
 
@@ -97,13 +98,42 @@ class SearchManager:
         filters: Optional[Dict[str, Any]] = None,
         **kwargs
     ) -> SearchResponse:
-        """Perform search using specified search type."""
+        """Perform search using specified search type with caching."""
         import time
         start_time = time.time()
         metrics = get_metrics_collector()
         
         if not self._initialized:
             await self.initialize()
+        
+        # Try to get cached results first
+        try:
+            cache_service = await get_cache_service()
+            cached_results = await cache_service.get_search_results(
+                query=query,
+                search_type=search_type.value,
+                limit=limit,
+                filters=filters,
+                min_score=kwargs.get('min_score', 0.0)
+            )
+            
+            if cached_results:
+                logger.debug(f"Cache hit for search: {search_type.value} query")
+                # Convert cached dict back to SearchResponse
+                cached_response = SearchResponse(**cached_results)
+                
+                # Record cache hit metrics
+                duration = time.time() - start_time
+                metrics.record_search_operation(
+                    search_type=search_type.value,
+                    duration=duration,
+                    result_count=len(cached_response.results),
+                    success=True
+                )
+                return cached_response
+        except Exception as e:
+            logger.warning(f"Cache lookup failed: {e}")
+            # Continue with regular search
         
         try:
             result = None
@@ -115,6 +145,23 @@ class SearchManager:
                 result = await self._search_hybrid(query, limit, filters, **kwargs)
             else:
                 raise ValueError(f"Unknown search type: {search_type}")
+            
+            # Cache the search results
+            try:
+                cache_service = await get_cache_service()
+                # Convert SearchResponse to dict for caching
+                result_dict = result.dict()
+                await cache_service.set_search_results(
+                    query=query,
+                    search_type=search_type.value,
+                    limit=limit,
+                    results=result_dict,
+                    filters=filters,
+                    min_score=kwargs.get('min_score', 0.0)
+                )
+                logger.debug(f"Cached search results for {search_type.value} query")
+            except Exception as e:
+                logger.warning(f"Failed to cache search results: {e}")
             
             # Record successful search metrics
             duration = time.time() - start_time
