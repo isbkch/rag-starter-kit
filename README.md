@@ -187,8 +187,37 @@ If you prefer running services locally without Docker:
 
    ```bash
    cd backend
-   pip install -r requirements.txt
+   uv sync
    ```
+
+#### macOS Specific Python Dependencies
+
+On macOS, you might encounter issues building `faiss-cpu` due to missing system dependencies or Python version incompatibilities. Follow these steps to ensure a smooth installation:
+
+1.  **Install Faiss via Homebrew**:
+    `faiss-cpu` relies on the C++ Faiss library. Install it using Homebrew:
+    ```bash
+    brew install faiss
+    ```
+
+2.  **Ensure Correct Python Version**:
+    This project is configured to use Python 3.11. If you are using `pyenv` or similar tools, ensure your local Python version is set to 3.11.x. The `.python-version` file in the project root should be `3.11.9`.
+
+3.  **Recreate Virtual Environment (if necessary)**:
+    If you've had previous installation attempts, it's best to clean and recreate the virtual environment:
+    ```bash
+    rm -rf .venv
+    uv venv --python 3.11
+    ```
+
+4.  **Install Dependencies with `uv`**:
+    The `tiktoken` library (a dependency of `openai`) might fail to build on newer Python versions due to `pyo3` compatibility. We've updated `faiss-cpu` to `1.11.0` and `numpy` to `1.26.0` in `backend/pyproject.toml` to address this.
+    To install all dependencies, including `faiss-cpu`, use `uv sync` with the `PYO3_USE_ABI3_FORWARD_COMPATIBILITY` environment variable:
+    ```bash
+    PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1 uv sync
+    ```
+    This command will install all required packages, including `faiss-cpu` and `tiktoken`, leveraging pre-built wheels where available and ensuring compatibility.
+
 
 2. **Install frontend dependencies**
 
