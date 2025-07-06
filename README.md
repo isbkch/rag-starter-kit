@@ -99,22 +99,26 @@ A **production-ready** Retrieval-Augmented Generation (RAG) platform with enterp
 ## 🆕 Recent Major Improvements
 
 ### ✅ Production-Ready Infrastructure
+
 - **Complete Database Integration**: SQLAlchemy models with Alembic migrations for full document lifecycle management
 - **Fixed Port Conflicts**: Resolved Docker Compose issues (ChromaDB moved to port 8002)
 - **Environment Management**: Separate configs for development, staging, and production deployments
 
 ### ✅ Real-Time Features  
+
 - **Streaming Search**: Live search results with progressive loading and status indicators
 - **Real-Time Document Management**: Live status updates during processing and indexing
 - **Progressive UI**: Results appear as they're found, improving perceived performance
 
 ### ✅ Advanced Document Management
+
 - **Complete CRUD Operations**: Create, read, update, delete, and reindex documents via API and UI
 - **Document Lifecycle Tracking**: Status monitoring (pending → processing → completed/failed)
 - **Batch Operations**: Bulk delete, reindex, and status filtering
 - **Metadata Management**: Comprehensive document and chunk metadata storage
 
 ### ✅ Enhanced Monitoring & Analytics
+
 - **Custom Grafana Dashboards**: RAG-specific metrics including search latency, document processing rates
 - **Performance Analytics**: Vector database stats, embedding cache hit rates, API response times
 - **Error Tracking**: Comprehensive error monitoring with alerts and notifications
@@ -169,11 +173,11 @@ A **production-ready** Retrieval-Augmented Generation (RAG) platform with enterp
    ```
 
 5. **Access the application**
-   - **Frontend**: http://localhost:3000 (full-featured React app)
-   - **Backend API**: http://localhost:8080 (FastAPI with streaming)
-   - **API Documentation**: http://localhost:8080/docs (interactive docs)
-   - **Grafana Monitoring**: http://localhost:3001 (admin/admin)
-   - **Prometheus Metrics**: http://localhost:9090
+   - **Frontend**: <http://localhost:3000> (full-featured React app)
+   - **Backend API**: <http://localhost:8080> (FastAPI with streaming)
+   - **API Documentation**: <http://localhost:8080/docs> (interactive docs)
+   - **Grafana Monitoring**: <http://localhost:3001> (admin/admin)
+   - **Prometheus Metrics**: <http://localhost:9090>
 
 ### Alternative: Local Development Setup
 
@@ -283,9 +287,9 @@ CHUNK_OVERLAP=200
 ### Modern React Interface ✅
 
 - **📱 Responsive Design**: Mobile-friendly interface with Tailwind CSS
-- **🔍 Advanced Search UI**: 
+- **🔍 Advanced Search UI**:
   - Real-time streaming search with progress indicators
-  - Search type selection (hybrid, vector, keyword) 
+  - Search type selection (hybrid, vector, keyword)
   - Search suggestions with auto-complete
   - Result highlighting and citation support
 - **📄 Document Management Dashboard**:
@@ -320,20 +324,20 @@ CHUNK_OVERLAP=200
 
 ### Supported Document Formats
 
-| Format | Max Size | Processing Time | Notes |
-|--------|----------|----------------|--------|
-| PDF | 50MB | ~30s | OCR supported for scanned PDFs |
-| DOCX | 25MB | ~15s | Full formatting preservation |
-| Markdown | 10MB | ~5s | Native support with metadata |
-| Plain Text | 10MB | ~3s | Fastest processing |
+| Format     | Max Size | Processing Time | Notes                          |
+| ---------- | -------- | --------------- | ------------------------------ |
+| PDF        | 50MB     | ~30s            | OCR supported for scanned PDFs |
+| DOCX       | 25MB     | ~15s            | Full formatting preservation   |
+| Markdown   | 10MB     | ~5s             | Native support with metadata   |
+| Plain Text | 10MB     | ~3s             | Fastest processing             |
 
 ### Vector Database Comparison
 
-| Provider | Pros | Cons | Best For |
-|----------|------|------|----------|
-| **ChromaDB** | Open source, local deployment | Limited scaling | Development, small teams |
-| **Pinecone** | Managed service, excellent performance | Cost, vendor lock-in | Production, enterprise |
-| **Weaviate** | GraphQL, semantic search | Complexity | Advanced use cases |
+| Provider     | Pros                                   | Cons                 | Best For                 |
+| ------------ | -------------------------------------- | -------------------- | ------------------------ |
+| **ChromaDB** | Open source, local deployment          | Limited scaling      | Development, small teams |
+| **Pinecone** | Managed service, excellent performance | Cost, vendor lock-in | Production, enterprise   |
+| **Weaviate** | GraphQL, semantic search               | Complexity           | Advanced use cases       |
 
 ## 🔍 Usage
 
@@ -482,15 +486,17 @@ kubectl apply -f .
 
 ### Comprehensive Grafana Dashboards ✅
 
-Access monitoring at **http://localhost:3001** (admin/admin)
+Access monitoring at **<http://localhost:3001>** (admin/admin)
 
 #### RAG Platform Overview Dashboard
+
 - **System Health**: Backend, Redis, PostgreSQL, Vector DB status
 - **Request Metrics**: API request rates, response times, error rates  
 - **Search Performance**: Search latency by type (hybrid/vector/keyword)
 - **Resource Usage**: Memory, CPU, disk utilization
 
 #### Detailed RAG Metrics Dashboard  
+
 - **Search Analytics**: Search operations rate, latency percentiles, success rates
 - **Document Management**: Processing rates, document counts by status, processing duration
 - **Vector Database**: Document counts, embeddings stats, index performance
@@ -624,6 +630,7 @@ pre-commit install
 #### Backend Issues
 
 **Issue**: `ImportError: No module named 'app'`
+
 ```bash
 # Solution: Set PYTHONPATH
 export PYTHONPATH="${PYTHONPATH}:$(pwd)/backend"
@@ -632,6 +639,7 @@ cd backend && uvicorn app.main:app --reload
 ```
 
 **Issue**: Vector database connection fails
+
 ```bash
 # Check vector database is running
 docker-compose ps
@@ -645,6 +653,7 @@ curl http://localhost:8000/api/v1/health/detailed
 ```
 
 **Issue**: OpenAI API key errors
+
 ```bash
 # Verify API key is set
 echo $OPENAI_API_KEY
@@ -657,6 +666,7 @@ curl https://api.openai.com/v1/models \
 #### Frontend Issues
 
 **Issue**: API calls fail with CORS errors
+
 ```bash
 # Check if backend is running
 curl http://localhost:8000/health
@@ -666,6 +676,7 @@ curl http://localhost:8000/health
 ```
 
 **Issue**: `npm install` fails
+
 ```bash
 # Clear npm cache
 npm cache clean --force
@@ -678,6 +689,7 @@ npm install
 #### Docker Issues
 
 **Issue**: Services fail to start
+
 ```bash
 # Check logs
 docker-compose logs -f [service-name]
@@ -691,6 +703,7 @@ df -h
 ```
 
 **Issue**: Port conflicts
+
 ```bash
 # Check what's using the port
 lsof -i :8080  # Backend port (Docker mapped)
@@ -705,12 +718,14 @@ lsof -i :3001  # Grafana port
 ### Performance Issues
 
 **Issue**: Slow search responses
+
 1. Check vector database performance: `GET /api/v1/health/detailed`
 2. Monitor embedding cache hit rate
 3. Verify similarity threshold isn't too low
 4. Consider reducing `max_results` parameter
 
 **Issue**: High memory usage
+
 1. Monitor embedding cache size
 2. Reduce `CHUNK_SIZE` for large documents
 3. Implement document cleanup for old files
@@ -780,21 +795,25 @@ For support and questions:
 This Enterprise RAG Platform has been **fully implemented** with all critical production features:
 
 ### ✅ **Infrastructure Complete**
+
 - Database-backed document lifecycle management with SQLAlchemy + Alembic
 - Fixed Docker port conflicts and production-ready configurations
 - Comprehensive environment management for dev/staging/production
 
 ### ✅ **Advanced Features Implemented**  
+
 - Real-time streaming search with progressive result loading
 - Complete document management UI with filtering, pagination, and bulk operations
 - Professional React interface with modern navigation and error handling
 
 ### ✅ **Production Monitoring**
+
 - Custom Grafana dashboards with RAG-specific metrics and alerts
 - Performance tracking for search latency, document processing, and system health
 - Automated alerting for error rates and performance degradation
 
 ### ✅ **Enterprise-Grade Architecture**
+
 - Async background processing with Celery for document operations
 - Multi-level caching for optimal performance at scale
 - Comprehensive error handling and recovery mechanisms
