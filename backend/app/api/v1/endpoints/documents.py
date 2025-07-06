@@ -143,8 +143,9 @@ async def list_documents(
         return DocumentListResponse(
             documents=documents,
             total=total_documents,
-            limit=limit,
-            offset=offset
+            page=page,
+            page_size=limit,
+            total_pages=(total_documents + limit - 1) // limit if total_documents > 0 else 0
         )
         
     except Exception as e:

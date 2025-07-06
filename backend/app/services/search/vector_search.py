@@ -10,6 +10,7 @@ from app.models.search import SearchResult, SearchResponse, SearchType
 from app.services.vectordb.factory import VectorDBFactory
 from app.services.vectordb.base import VectorSearchResult
 from app.services.search.embedding_service import EmbeddingService
+from app.core.metrics import get_metrics_collector
 
 logger = logging.getLogger(__name__)
 
