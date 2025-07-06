@@ -3,15 +3,15 @@ Rate limiting middleware implementation using SlowAPI and Redis.
 """
 
 import logging
-from typing import Optional, Dict, Any
 from functools import wraps
+from typing import Any, Dict, Optional
 
-from fastapi import Request, HTTPException, status
+import redis.asyncio as redis
+from fastapi import HTTPException, Request, status
 from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
-import redis.asyncio as redis
+from slowapi.util import get_remote_address
 
 from app.core.config import settings
 

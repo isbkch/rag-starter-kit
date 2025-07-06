@@ -1,27 +1,28 @@
 """
 Document management endpoints.
 """
+import hashlib
 import logging
-from typing import List, Optional
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, BackgroundTasks
-from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session
 import os
 import tempfile
 import uuid
-import hashlib
 from datetime import datetime
+from typing import List, Optional
 
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
+from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
+
+from app.core.config import Settings, get_settings
+from app.core.database import get_db
 from app.models.documents import (
+    DocumentListResponse,
     DocumentResponse,
     DocumentUploadResponse,
-    DocumentListResponse,
 )
-from app.services.ingestion.document_processor import DocumentProcessor
-from app.services.search.search_manager import get_search_manager, SearchManager
 from app.services.document_service import DocumentService
-from app.core.config import get_settings, Settings
-from app.core.database import get_db
+from app.services.ingestion.document_processor import DocumentProcessor
+from app.services.search.search_manager import SearchManager, get_search_manager
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

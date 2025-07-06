@@ -3,23 +3,22 @@ Pytest configuration and fixtures for the RAG platform tests.
 """
 
 import asyncio
+from typing import AsyncGenerator, Generator
+from unittest.mock import AsyncMock, Mock
+
 import pytest
 import pytest_asyncio
-from typing import AsyncGenerator, Generator
-from unittest.mock import Mock, AsyncMock
-
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.main import app
 from app.core.config import Settings
+from app.main import app
 from app.models.database import Base
-from app.services.vectordb.base import VectorDBConfig
 from app.services.search.embedding_service import EmbeddingService
-
+from app.services.vectordb.base import VectorDBConfig
 
 # Test database URL (in-memory SQLite)
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -317,8 +316,8 @@ async def cleanup_redis(mock_redis):
 @pytest.fixture(autouse=True)
 def cleanup_files():
     """Cleanup temporary files after tests."""
-    import tempfile
     import shutil
+    import tempfile
 
     temp_dirs = []
 

@@ -6,27 +6,27 @@ import logging
 import time
 from contextlib import asynccontextmanager
 
+import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
-import uvicorn
+from slowapi.errors import RateLimitExceeded
 
-from app.core.config import settings
 from app.api.v1.api import api_router
-from app.services.search.search_manager import get_search_manager
-from app.core.rate_limiting import (
-    rate_limit_middleware,
-    custom_rate_limit_exceeded_handler,
-)
-from app.core.tracing import init_tracing, instrument_fastapi, shutdown_tracing
+from app.core.config import settings
 from app.core.metrics import (
+    CONTENT_TYPE_LATEST,
     generate_metrics,
     get_metrics_collector,
-    CONTENT_TYPE_LATEST,
 )
-from slowapi.errors import RateLimitExceeded
+from app.core.rate_limiting import (
+    custom_rate_limit_exceeded_handler,
+    rate_limit_middleware,
+)
+from app.core.tracing import init_tracing, instrument_fastapi, shutdown_tracing
+from app.services.search.search_manager import get_search_manager
 
 # Configure logging
 logging.basicConfig(

@@ -4,20 +4,20 @@ OpenTelemetry tracing setup for the RAG platform.
 
 import logging
 import os
-from typing import Dict, Any, Optional
 from functools import wraps
+from typing import Any, Dict, Optional
 
-from opentelemetry import trace, metrics
+from opentelemetry import metrics, trace
 from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+from opentelemetry.exporter.prometheus import PrometheusMetricReader
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
 from opentelemetry.instrumentation.redis import RedisInstrumentor
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.resources import Resource
-from opentelemetry.exporter.prometheus import PrometheusMetricReader
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 from opentelemetry.semantic_conventions.resource import ResourceAttributes
 
 from app.core.config import settings

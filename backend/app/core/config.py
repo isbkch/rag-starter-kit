@@ -4,7 +4,8 @@ Core configuration module for the RAG platform.
 
 import os
 from functools import lru_cache
-from typing import Optional, List
+from typing import List, Optional
+
 from pydantic import BaseSettings, Field
 
 

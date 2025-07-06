@@ -2,12 +2,13 @@
 Document service for database operations.
 """
 
-from typing import List, Optional, Dict, Any
-from sqlalchemy.orm import Session
-from sqlalchemy import desc
-from datetime import datetime
 import logging
 import uuid
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+from sqlalchemy import desc
+from sqlalchemy.orm import Session
 
 from app.models.database import Document, DocumentChunk
 from app.models.documents import DocumentStatus, DocumentType

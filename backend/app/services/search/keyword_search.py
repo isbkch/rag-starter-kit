@@ -2,16 +2,17 @@
 Keyword search engine using BM25 algorithm for text-based search.
 """
 import logging
-from typing import List, Dict, Any, Optional
-from rank_bm25 import BM25Okapi
+import re
+import string
+from typing import Any, Dict, List, Optional
+
 import nltk
-from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
-import string
-import re
+from nltk.tokenize import word_tokenize
+from rank_bm25 import BM25Okapi
 
-from app.models.search import SearchResult, SearchResponse
+from app.models.search import SearchResponse, SearchResult
 
 logger = logging.getLogger(__name__)
 

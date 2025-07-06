@@ -4,17 +4,17 @@ Text extraction service for different document types.
 
 import io
 import logging
-from pathlib import Path
-from typing import Dict, Any, Optional
 from abc import ABC, abstractmethod
+from pathlib import Path
+from typing import Any, Dict, Optional
 
-import PyPDF2
-import pdfplumber
-from docx import Document as DocxDocument
 import markdown
+import pdfplumber
+import PyPDF2
 from bs4 import BeautifulSoup
+from docx import Document as DocxDocument
 
-from app.models.documents import DocumentType, DocumentMetadata
+from app.models.documents import DocumentMetadata, DocumentType
 
 logger = logging.getLogger(__name__)
 

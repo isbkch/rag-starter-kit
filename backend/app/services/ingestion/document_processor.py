@@ -2,28 +2,28 @@
 Main document processing service that orchestrates the ingestion pipeline.
 """
 
-import logging
-import uuid
 import asyncio
-from pathlib import Path
-from typing import Optional, List, Dict, Any
+import logging
+import traceback
+import uuid
 from datetime import datetime
 from functools import wraps
-import traceback
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
+from app.core.config import settings
+from app.core.tracing import get_metrics_collector, trace_document_processing
 from app.models.documents import (
     Document,
     DocumentChunk,
-    DocumentType,
-    DocumentStatus,
     DocumentMetadata,
+    DocumentStatus,
+    DocumentType,
 )
+from app.services.ingestion.chunk_processor import ChunkingConfig, ChunkProcessor
 from app.services.ingestion.text_extractor import TextExtractor
-from app.services.ingestion.chunk_processor import ChunkProcessor, ChunkingConfig
 from app.services.search.embedding_service import get_embedding_service
 from app.services.vectordb.factory import VectorDBFactory
-from app.core.config import settings
-from app.core.tracing import trace_document_processing, get_metrics_collector
 
 logger = logging.getLogger(__name__)
 

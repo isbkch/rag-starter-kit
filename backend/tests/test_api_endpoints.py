@@ -2,9 +2,10 @@
 Tests for API endpoints.
 """
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch, AsyncMock
 
 
 @pytest.mark.unit

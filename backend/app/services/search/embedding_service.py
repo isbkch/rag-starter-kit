@@ -2,16 +2,16 @@
 Embedding service implementation with multiple provider support and caching.
 """
 
-import logging
-import hashlib
 import asyncio
-from typing import List, Optional, Dict, Any
+import hashlib
+import logging
 from abc import ABC, abstractmethod
+from typing import Any, Dict, List, Optional
 
-import openai
 import numpy as np
-from sentence_transformers import SentenceTransformer
+import openai
 import redis.asyncio as redis
+from sentence_transformers import SentenceTransformer
 
 from app.core.config import settings
 

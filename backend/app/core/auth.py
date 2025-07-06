@@ -5,11 +5,12 @@ Authentication and authorization system using JWT tokens.
 import logging
 import secrets
 from datetime import datetime, timedelta
-from typing import Optional, Dict, Any, List
-from passlib.context import CryptContext
+from typing import Any, Dict, List, Optional
+
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
-from fastapi import HTTPException, status, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from passlib.context import CryptContext
 
 from app.core.config import settings
 

@@ -5,11 +5,12 @@ Vector database factory for creating the appropriate implementation.
 import logging
 from typing import Optional
 
+from app.core.config import settings
+
 from .base import BaseVectorDB, VectorDBConfig
 from .chroma_db import ChromaDB
 from .pinecone_db import PineconeDB
 from .weaviate_db import WeaviateDB
-from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 

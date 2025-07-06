@@ -4,19 +4,19 @@ Text chunking service for document processing.
 
 import logging
 import re
-from typing import List, Dict, Any, Optional
-from dataclasses import dataclass
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 
 import tiktoken
 from langchain.text_splitter import (
     RecursiveCharacterTextSplitter,
-    TokenTextSplitter,
     SpacyTextSplitter,
+    TokenTextSplitter,
 )
 
-from app.models.documents import DocumentChunk
 from app.core.config import settings
+from app.models.documents import DocumentChunk
 
 logger = logging.getLogger(__name__)
 

@@ -3,8 +3,8 @@ Base vector database interface.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Tuple
 
 from app.models.documents import DocumentChunk
 

@@ -2,19 +2,19 @@
 Search manager that coordinates all search engines and provides unified interface.
 """
 import logging
-from typing import Dict, Any, Optional, List
 from enum import Enum
+from typing import Any, Dict, List, Optional
 
-from app.core.config import Settings
-from app.models.search import SearchResponse
-from app.services.vectordb.factory import VectorDBFactory
-from app.services.search.embedding_service import EmbeddingService
-from app.services.search.vector_search import VectorSearchEngine
-from app.services.search.keyword_search import KeywordSearchEngine
-from app.services.search.hybrid_search import HybridSearchEngine
-from app.core.tracing import trace_search_operation
-from app.core.metrics import get_metrics_collector
 from app.core.cache import get_cache_service
+from app.core.config import Settings
+from app.core.metrics import get_metrics_collector
+from app.core.tracing import trace_search_operation
+from app.models.search import SearchResponse
+from app.services.search.embedding_service import EmbeddingService
+from app.services.search.hybrid_search import HybridSearchEngine
+from app.services.search.keyword_search import KeywordSearchEngine
+from app.services.search.vector_search import VectorSearchEngine
+from app.services.vectordb.factory import VectorDBFactory
 
 logger = logging.getLogger(__name__)
 

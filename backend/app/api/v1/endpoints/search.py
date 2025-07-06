@@ -1,17 +1,18 @@
 """
 Search endpoints with streaming responses.
 """
-import logging
 import json
-from typing import Optional, Dict, Any
-from fastapi import APIRouter, HTTPException, Depends, Query
+import logging
+from datetime import datetime
+from typing import Any, Dict, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from app.models.search import SearchResponse, SearchRequest, SearchType
-from app.services.search.search_manager import get_search_manager, SearchManager
-from app.core.config import get_settings, Settings
-from datetime import datetime
+from app.core.config import Settings, get_settings
+from app.models.search import SearchRequest, SearchResponse, SearchType
+from app.services.search.search_manager import SearchManager, get_search_manager
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

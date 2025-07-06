@@ -2,22 +2,23 @@
 SQLAlchemy database models for the RAG platform.
 """
 
+import uuid
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
 from sqlalchemy import (
-    Column,
-    Integer,
-    String,
-    DateTime,
-    Text,
-    Boolean,
     JSON,
+    Boolean,
+    Column,
+    DateTime,
     Float,
     ForeignKey,
+    Integer,
+    String,
+    Text,
 )
-from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
-import uuid
+from sqlalchemy.orm import relationship
 
 from app.core.database import Base
 

@@ -3,14 +3,15 @@ Pinecone vector database implementation.
 """
 
 import logging
-from typing import List, Dict, Any, Optional
 import uuid
+from typing import Any, Dict, List, Optional
 
 import pinecone
 from pinecone import Pinecone, ServerlessSpec
 
-from .base import BaseVectorDB, VectorSearchResult, VectorDBConfig
 from app.core.config import settings
+
+from .base import BaseVectorDB, VectorDBConfig, VectorSearchResult
 
 logger = logging.getLogger(__name__)
 

@@ -4,20 +4,20 @@ Prometheus metrics integration for comprehensive monitoring.
 
 import logging
 import time
-from typing import Dict, Any, Optional
 from functools import wraps
+from typing import Any, Dict, Optional
 
-from prometheus_client import (
-    Counter,
-    Histogram,
-    Gauge,
-    Info,
-    CollectorRegistry,
-    multiprocess,
-    generate_latest,
-    CONTENT_TYPE_LATEST,
-)
 import psutil
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    CollectorRegistry,
+    Counter,
+    Gauge,
+    Histogram,
+    Info,
+    generate_latest,
+    multiprocess,
+)
 
 from app.core.config import settings
 

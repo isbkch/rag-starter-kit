@@ -2,12 +2,13 @@
 Health check endpoints with detailed component monitoring.
 """
 import logging
-from typing import Dict, Any
-from fastapi import APIRouter, Depends, HTTPException
 from datetime import datetime
+from typing import Any, Dict
 
-from app.services.search.search_manager import get_search_manager, SearchManager
-from app.core.config import get_settings, Settings
+from fastapi import APIRouter, Depends, HTTPException
+
+from app.core.config import Settings, get_settings
+from app.services.search.search_manager import SearchManager, get_search_manager
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -79,8 +80,9 @@ async def detailed_health_check(
 
         # Add system information
         try:
-            import psutil
             import sys
+
+            import psutil
 
             health_status["system"] = {
                 "python_version": sys.version,
