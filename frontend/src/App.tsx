@@ -1,38 +1,111 @@
-import React from "react";
+import React, { useState } from "react";
 
-function App() {
+// Define types for search results and citations
+interface Citation {
+  id: number;
+  ref: string;
+  snippet: string;
+}
+
+interface SearchResult {
+  id: number;
+  text: string;
+  citations: Citation[];
+}
+
+function Search() {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<SearchResult[]>([]); // Use explicit type
+
+  // Placeholder search handler
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    // TODO: Integrate with API
+    setResults([
+      {
+        id: 1,
+        text: "This is a sample result with a [1] citation.",
+        citations: [
+          { id: 1, ref: "Document 1", snippet: "Sample cited text." }
+        ]
+      }
+    ]);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
-      <header className="bg-white shadow sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold tracking-tight text-blue-700">Enterprise RAG Platform</h1>
-          <nav className="space-x-4">
-            <a href="#search" className="text-gray-700 hover:text-blue-600 font-medium">Search</a>
-            <a href="#upload" className="text-gray-700 hover:text-blue-600 font-medium">Upload</a>
-            <a href="/docs" className="text-gray-400 hover:text-blue-400 font-medium" target="_blank" rel="noopener noreferrer">API Docs</a>
-          </nav>
-        </div>
-      </header>
-      <main className="max-w-4xl mx-auto px-4 py-10">
-        {/* TODO: Route to Search and Upload pages */}
-        <section id="search" className="mb-12">
-          <h2 className="text-xl font-semibold mb-4">Semantic & Hybrid Search</h2>
-          <div className="bg-white rounded-lg shadow p-6 min-h-[200px] flex items-center justify-center text-gray-400">
-            Search UI coming soon...
-          </div>
-        </section>
-        <section id="upload">
-          <h2 className="text-xl font-semibold mb-4">Upload Documents</h2>
-          <div className="bg-white rounded-lg shadow p-6 min-h-[150px] flex items-center justify-center text-gray-400">
-            Upload UI coming soon...
-          </div>
-        </section>
-      </main>
-      <footer className="text-center text-gray-400 py-6 border-t mt-10 text-sm">
-        &copy; {new Date().getFullYear()} Enterprise RAG Platform. All rights reserved.
-      </footer>
+    <div className="max-w-2xl mx-auto p-4">
+      <h2 className="text-2xl font-bold mb-4">Search</h2>
+      <form onSubmit={handleSearch} className="flex gap-2 mb-6">
+        <input
+          className="flex-1 border rounded px-3 py-2"
+          type="text"
+          placeholder="Enter your query..."
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+        />
+        <button className="bg-blue-600 text-white px-4 py-2 rounded" type="submit">
+          Search
+        </button>
+      </form>
+      <div>
+        {results.length === 0 ? (
+          <p className="text-gray-500">No results yet.</p>
+        ) : (
+          <ul className="space-y-4">
+            {results.map(result => (
+              <li key={result.id} className="border rounded p-4 bg-white shadow">
+                {/* Simple citation highlighting: replace [n] with superscript */}
+                <span dangerouslySetInnerHTML={{
+                  __html: result.text.replace(/\[(\d+)\]/g, '<sup class="text-blue-600 cursor-pointer">[$1]</sup>')
+                }} />
+                <div className="mt-2 text-sm text-gray-600">
+                  {result.citations.map((c: Citation) => (
+                    <div key={c.id}>
+                      <span className="font-semibold">[{c.id}]</span> {c.ref}: <span className="italic">{c.snippet}</span>
+                    </div>
+                  ))}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
 
-export default App;
+function Upload() {
+  return (
+    <div className="max-w-2xl mx-auto p-4">
+      <h2 className="text-2xl font-bold mb-4">Upload</h2>
+      {/* TODO: Implement upload UI */}
+      <p className="text-gray-500">Upload functionality coming soon.</p>
+    </div>
+  );
+}
+
+export default function App() {
+  const [page, setPage] = useState<'search' | 'upload'>('search');
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <nav className="bg-white shadow mb-8">
+        <div className="max-w-2xl mx-auto px-4 py-3 flex gap-4">
+          <button
+            className={`font-semibold ${page === 'search' ? 'text-blue-600' : 'text-gray-700'}`}
+            onClick={() => setPage('search')}
+          >
+            Search
+          </button>
+          <button
+            className={`font-semibold ${page === 'upload' ? 'text-blue-600' : 'text-gray-700'}`}
+            onClick={() => setPage('upload')}
+          >
+            Upload
+          </button>
+        </div>
+      </nav>
+      {page === 'search' ? <Search /> : <Upload />}
+    </div>
+  );
+}

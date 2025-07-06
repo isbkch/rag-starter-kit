@@ -5,6 +5,7 @@ A production-ready Retrieval-Augmented Generation (RAG) platform with enterprise
 ## 🚀 Features
 
 ### Core Capabilities
+
 - **Multi-format Document Ingestion**: Support for PDF, DOCX, Markdown, and plain text
 - **Hybrid Search Engine**: Combines vector similarity and BM25 keyword search
 - **Vector Database Abstraction**: Seamless switching between Pinecone, Weaviate, and ChromaDB
@@ -15,6 +16,7 @@ A production-ready Retrieval-Augmented Generation (RAG) platform with enterprise
 - **AWS Deployment Scripts**: Terraform/CDK for production deployment (coming soon)
 
 ### Enterprise Features
+
 - **Multi-provider Vector Database Support**: Choose the best database for your needs
 - **Advanced Text Chunking**: Multiple strategies including semantic and structure-aware
 - **Comprehensive Monitoring**: OpenTelemetry, Prometheus, and custom metrics
@@ -54,6 +56,7 @@ A production-ready Retrieval-Augmented Generation (RAG) platform with enterprise
 ## 🛠️ Technology Stack
 
 ### Backend
+
 - **FastAPI**: High-performance async web framework
 - **LangChain**: LLM application framework
 - **Pydantic**: Data validation and settings management
@@ -62,23 +65,27 @@ A production-ready Retrieval-Augmented Generation (RAG) platform with enterprise
 - **Redis**: Caching and message broker
 
 ### Vector Databases
+
 - **ChromaDB**: Open-source embedding database
 - **Pinecone**: Managed vector database service
 - **Weaviate**: Open-source vector database with GraphQL
 
 ### Document Processing
+
 - **PyPDF2/pdfplumber**: PDF text extraction
 - **python-docx**: DOCX processing
 - **python-markdown**: Markdown parsing
 - **tiktoken**: Token counting and chunking
 
 ### Search & Embeddings
+
 - **OpenAI Embeddings**: Text-embedding-ada-002
 - **Sentence Transformers**: Local embedding models
 - **Elasticsearch**: BM25 keyword search
 - **FAISS**: Local vector search
 
 ### Monitoring & Observability
+
 - **OpenTelemetry**: Distributed tracing
 - **Prometheus**: Metrics collection
 - **Grafana**: Visualization (coming soon)
@@ -87,6 +94,7 @@ A production-ready Retrieval-Augmented Generation (RAG) platform with enterprise
 ## 📦 Installation
 
 ### Prerequisites
+
 - Python 3.9+
 - Node.js 18+
 - Docker & Docker Compose
@@ -96,29 +104,34 @@ A production-ready Retrieval-Augmented Generation (RAG) platform with enterprise
 ### Quick Start
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd rag-starter-kit
    ```
 
 2. **Set up environment variables**
+
    ```bash
    cp .env.example .env
    # Edit .env with your configuration
    ```
 
 3. **Install Python dependencies**
+
    ```bash
    cd backend
    pip install -r requirements.txt
    ```
 
 4. **Start with Docker Compose**
+
    ```bash
    docker-compose up -d
    ```
 
 5. **Run the backend**
+
    ```bash
    cd backend
    uvicorn app.main:app --reload
@@ -330,4 +343,4 @@ For support and questions:
 
 ---
 
-**Enterprise RAG Platform Starter Kit** - Production-ready RAG with enterprise features and comprehensive scalability planning. 
+**Enterprise RAG Platform Starter Kit** - Production-ready RAG with enterprise features and comprehensive scalability planning.
