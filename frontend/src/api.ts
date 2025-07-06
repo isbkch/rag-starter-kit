@@ -1,4 +1,5 @@
 // API service for search and document upload
+import { API_URL, MAX_SEARCH_RESULTS, MIN_SEARCH_SCORE, log, logError } from './config';
 
 export interface Citation {
   id: number;
@@ -27,20 +28,39 @@ export interface SearchResponse {
 
 export async function search(
   query: string,
-  searchType: "hybrid" | "vector" | "keyword" = "hybrid"
+  searchType: "hybrid" | "vector" | "keyword" = "hybrid",
+  limit: number = MAX_SEARCH_RESULTS
 ): Promise<SearchResponse> {
-  const res = await fetch("/api/v1/search/", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      query,
-      search_type: searchType,
-      limit: 10,
-      min_score: 0.0,
-    }),
-  });
-  if (!res.ok) throw new Error("Search failed");
-  return res.json();
+  const url = `${API_URL}/search/`;
+  const payload = {
+    query,
+    search_type: searchType,
+    limit,
+    min_score: MIN_SEARCH_SCORE,
+  };
+  
+  log('Searching with payload:', payload);
+  
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    
+    if (!res.ok) {
+      const error = await res.text();
+      logError('Search failed:', error);
+      throw new Error(`Search failed: ${res.status} ${res.statusText}`);
+    }
+    
+    const result = await res.json();
+    log('Search successful:', result);
+    return result;
+  } catch (error) {
+    logError('Search error:', error);
+    throw error;
+  }
 }
 
 export interface UploadResponse {

@@ -5,12 +5,11 @@ SQLAlchemy database models for the RAG platform.
 from datetime import datetime
 from typing import Optional, Dict, Any
 from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON, Float, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 
-Base = declarative_base()
+from app.core.database import Base
 
 
 class Document(Base):
