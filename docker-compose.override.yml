@@ -1,0 +1,36 @@
+version: "3.8"
+
+# Development overrides for docker-compose.yml
+# This file is automatically used when running docker-compose in development
+
+services:
+  backend:
+    environment:
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+    volumes:
+      - ./backend:/app:cached
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    
+  frontend:
+    environment:
+      - VITE_DEV_MODE=true
+      - VITE_ENABLE_LOGGING=true
+    volumes:
+      - ./frontend:/app:cached
+      - /app/node_modules
+    command: npm run dev -- --host 0.0.0.0
+    
+  celery-worker:
+    environment:
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+    volumes:
+      - ./backend:/app:cached
+      
+  celery-beat:
+    environment:
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+    volumes:
+      - ./backend:/app:cached
