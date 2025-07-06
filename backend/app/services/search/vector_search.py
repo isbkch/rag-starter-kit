@@ -6,7 +6,7 @@ import logging
 from typing import List, Dict, Any, Optional
 import time
 
-from app.models.search import SearchResult, SearchType
+from app.models.search import SearchResult, SearchResponse, SearchType
 from app.services.vectordb.factory import VectorDBFactory
 from app.services.vectordb.base import VectorSearchResult
 from app.services.search.embedding_service import EmbeddingService
@@ -38,10 +38,10 @@ class VectorSearchEngine:
         self,
         query: str,
         limit: int = 10,
-        similarity_threshold: float = 0.7,
+        min_score: float = 0.7,
         filters: Optional[Dict[str, Any]] = None,
         collection_name: Optional[str] = None,
-    ) -> List[SearchResult]:
+    ) -> SearchResponse:
         """
         Perform vector similarity search.
         
@@ -74,18 +74,15 @@ class VectorSearchEngine:
             # Convert to SearchResult format and filter by threshold
             search_results = []
             for i, result in enumerate(vector_results):
-                if result.score >= similarity_threshold:
+                if result.score >= min_score:
                     search_result = SearchResult(
-                        id=result.id,
-                        document_id=result.metadata.get('document_id', ''),
-                        chunk_id=result.metadata.get('chunk_id', ''),
                         content=result.content,
                         score=result.score,
-                        similarity_score=result.score,
-                        keyword_score=None,
                         metadata=result.metadata,
-                        highlights=[],  # Vector search doesn't provide highlights
-                        citations=self._extract_citations(result),
+                        source=result.metadata.get('source', ''),
+                        title=result.metadata.get('title', ''),
+                        context=result.content[:200] + "..." if len(result.content) > 200 else result.content,
+                        citations=self._extract_citations_list(result)
                     )
                     search_results.append(search_result)
                 
@@ -93,10 +90,16 @@ class VectorSearchEngine:
                 if len(search_results) >= limit:
                     break
             
-            search_time = (time.time() - start_time) * 1000
-            logger.info(f"Vector search completed in {search_time:.2f}ms, found {len(search_results)} results")
+            search_time = time.time() - start_time
+            logger.info(f"Vector search completed in {search_time:.2f}s, found {len(search_results)} results")
             
-            return search_results
+            return SearchResponse(
+                query=query,
+                results=search_results,
+                total_results=len(search_results),
+                search_time=search_time,
+                search_type="vector"
+            )
             
         except Exception as e:
             logger.error(f"Vector search failed: {e}")
@@ -292,6 +295,81 @@ class VectorSearchEngine:
         
         return citations
     
+    def _extract_citations_list(self, result: VectorSearchResult) -> List[str]:
+        """Extract citations as a list of strings."""
+        citations = []
+        
+        metadata = result.metadata
+        if metadata:
+            # Add source as citation
+            source = metadata.get('source', '')
+            if source:
+                citations.append(source)
+            
+            # Add title as citation if different from source
+            title = metadata.get('title', '')
+            if title and title != source:
+                citations.append(title)
+        
+        return citations
+    
+    async def index_documents(self, documents: List[Dict[str, Any]]):
+        """Index documents in the vector database.
+        
+        Args:
+            documents: List of documents to index, each containing:
+                - content: Text content
+                - metadata: Document metadata including id, title, source, etc.
+        """
+        try:
+            await self.initialize()
+            
+            logger.info(f"Indexing {len(documents)} documents in vector database...")
+            
+            # Process documents for vector storage
+            processed_docs = []
+            for doc in documents:
+                content = doc.get('content', '')
+                if not content:
+                    continue
+                
+                # Generate embedding for the content
+                embedding = await self.embedding_service.get_embedding(content)
+                
+                # Prepare document for vector storage
+                vector_doc = {
+                    'id': doc.get('id', ''),
+                    'content': content,
+                    'embedding': embedding,
+                    'metadata': doc.get('metadata', {})
+                }
+                
+                # Ensure essential metadata fields
+                if 'document_id' not in vector_doc['metadata']:
+                    vector_doc['metadata']['document_id'] = doc.get('document_id', doc.get('id', ''))
+                if 'chunk_id' not in vector_doc['metadata']:
+                    vector_doc['metadata']['chunk_id'] = doc.get('chunk_id', doc.get('id', ''))
+                if 'source' not in vector_doc['metadata']:
+                    vector_doc['metadata']['source'] = doc.get('source', '')
+                if 'title' not in vector_doc['metadata']:
+                    vector_doc['metadata']['title'] = doc.get('title', '')
+                
+                processed_docs.append(vector_doc)
+            
+            # Store in vector database
+            if processed_docs:
+                await self.vector_db.add_vectors(
+                    vectors=processed_docs,
+                    collection_name=self.collection_name
+                )
+                logger.info(f"Successfully indexed {len(processed_docs)} documents in vector database")
+            else:
+                logger.warning("No valid documents to index in vector database")
+                
+        except Exception as e:
+            logger.error(f"Error indexing documents in vector database: {e}")
+            raise
+    
     async def get_search_suggestions(
         self,
         query: str,
@@ -315,7 +393,7 @@ class VectorSearchEngine:
             results = await self.search(
                 query=query,
                 limit=limit * 2,
-                similarity_threshold=0.3,
+                min_score=0.3,
             )
             
             # Extract key phrases from results
