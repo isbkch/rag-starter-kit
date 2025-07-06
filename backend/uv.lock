@@ -3204,7 +3204,6 @@ requires-dist = [
     { name = "python-jose", extras = ["cryptography"], specifier = "==3.3.0" },
     { name = "python-multipart", specifier = "==0.0.6" },
     { name = "rank-bm25", specifier = "==0.2.2" },
-    { name = "redis", extras = ["asyncio"], specifier = "==5.0.1" },
     { name = "redis", extras = ["hiredis"], specifier = "==5.0.1" },
     { name = "rich", specifier = "==13.7.0" },
     { name = "sentence-transformers", specifier = "==2.2.2" },
