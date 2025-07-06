@@ -108,10 +108,10 @@ The platform follows a microservices architecture with clear separation of conce
 
 ```bash
 # Generate new migration
-cd backend && alembic revision --autogenerate -m "description"
+cd backend && uv run alembic revision --autogenerate -m "description"
 
 # Apply migrations
-cd backend && alembic upgrade head
+cd backend && uv run alembic upgrade head
 ```
 
 ## Testing Strategy
