@@ -16,15 +16,21 @@ import uvicorn
 from app.core.config import settings
 from app.api.v1.api import api_router
 from app.services.search.search_manager import get_search_manager
-from app.core.rate_limiting import rate_limit_middleware, custom_rate_limit_exceeded_handler
+from app.core.rate_limiting import (
+    rate_limit_middleware,
+    custom_rate_limit_exceeded_handler,
+)
 from app.core.tracing import init_tracing, instrument_fastapi, shutdown_tracing
-from app.core.metrics import generate_metrics, get_metrics_collector, CONTENT_TYPE_LATEST
+from app.core.metrics import (
+    generate_metrics,
+    get_metrics_collector,
+    CONTENT_TYPE_LATEST,
+)
 from slowapi.errors import RateLimitExceeded
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -33,20 +39,20 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
     logger.info("Starting Enterprise RAG Platform...")
-    
+
     # Startup
     try:
         # Initialize OpenTelemetry tracing
         init_tracing()
         logger.info("OpenTelemetry tracing initialized")
-        
+
         # Initialize search manager
         search_manager = await get_search_manager(settings)
         logger.info("Search manager initialized successfully")
-        
+
         # Store in app state for access in endpoints
         app.state.search_manager = search_manager
-        
+
         logger.info("Application startup complete")
         yield
     except Exception as e:
@@ -55,13 +61,13 @@ async def lifespan(app: FastAPI):
     finally:
         # Shutdown
         logger.info("Shutting down Enterprise RAG Platform...")
-        
+
         try:
             # Cleanup search manager
-            if hasattr(app.state, 'search_manager'):
+            if hasattr(app.state, "search_manager"):
                 await app.state.search_manager.close()
                 logger.info("Search manager closed successfully")
-            
+
             # Shutdown tracing
             shutdown_tracing()
             logger.info("Tracing shutdown completed")
@@ -82,8 +88,7 @@ app = FastAPI(
 # Add security middleware
 if not settings.DEBUG:
     app.add_middleware(
-        TrustedHostMiddleware,
-        allowed_hosts=settings.BACKEND_CORS_ORIGINS
+        TrustedHostMiddleware, allowed_hosts=settings.BACKEND_CORS_ORIGINS
     )
 
 # Add CORS middleware
@@ -104,68 +109,70 @@ app.middleware("http")(rate_limit_middleware)
 # Add rate limit exception handler
 app.add_exception_handler(RateLimitExceeded, custom_rate_limit_exceeded_handler)
 
+
 # Request timing and metrics middleware
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
     """Add processing time header and record metrics."""
     start_time = time.time()
     status_code = 200
-    
+
     try:
         response = await call_next(request)
         status_code = response.status_code
         process_time = time.time() - start_time
         response.headers["X-Process-Time"] = str(process_time)
-        
+
         # Record metrics (skip for metrics endpoints to avoid recursion)
-        if not request.url.path.startswith('/metrics'):
+        if not request.url.path.startswith("/metrics"):
             get_metrics_collector().record_http_request(
                 method=request.method,
                 endpoint=request.url.path,
                 status_code=status_code,
-                duration=process_time
+                duration=process_time,
             )
-        
+
         return response
     except Exception as e:
         process_time = time.time() - start_time
         status_code = 500
-        
+
         # Record error metrics
-        if not request.url.path.startswith('/metrics'):
+        if not request.url.path.startswith("/metrics"):
             get_metrics_collector().record_http_request(
                 method=request.method,
                 endpoint=request.url.path,
                 status_code=status_code,
-                duration=process_time
+                duration=process_time,
             )
             get_metrics_collector().record_error(
                 error_type=type(e).__name__,
-                component='http_middleware',
-                severity='error'
+                component="http_middleware",
+                severity="error",
             )
-        
+
         raise
+
 
 # Request logging middleware
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     """Log all requests for monitoring."""
     start_time = time.time()
-    
+
     # Log request
     logger.info(f"Request: {request.method} {request.url.path}")
-    
+
     # Process request
     response = await call_next(request)
-    
+
     # Log response
     process_time = time.time() - start_time
     logger.info(
         f"Response: {response.status_code} - {process_time:.3f}s - "
         f"{request.method} {request.url.path}"
     )
-    
+
     return response
 
 
@@ -191,21 +198,27 @@ async def file_not_found_handler(request: Request, exc: FileNotFoundError):
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
     """Handle general exceptions."""
-    logger.error(f"Unhandled exception on {request.method} {request.url.path}: {exc}", exc_info=True)
-    
+    logger.error(
+        f"Unhandled exception on {request.method} {request.url.path}: {exc}",
+        exc_info=True,
+    )
+
     if settings.DEBUG:
         return JSONResponse(
             status_code=500,
             content={
                 "error": "Internal Server Error",
                 "detail": str(exc),
-                "type": type(exc).__name__
-            }
+                "type": type(exc).__name__,
+            },
         )
     else:
         return JSONResponse(
             status_code=500,
-            content={"error": "Internal Server Error", "detail": "An unexpected error occurred"}
+            content={
+                "error": "Internal Server Error",
+                "detail": "An unexpected error occurred",
+            },
         )
 
 
@@ -219,8 +232,9 @@ async def root():
         "status": "running",
         "docs": "/docs" if settings.DEBUG else "Documentation disabled in production",
         "health": "/health",
-        "api_base": settings.API_V1_STR
+        "api_base": settings.API_V1_STR,
     }
+
 
 # Health check endpoint
 @app.get("/health")
@@ -230,17 +244,19 @@ async def health_check():
         "status": "healthy",
         "app_name": settings.APP_NAME,
         "version": settings.APP_VERSION,
-        "timestamp": time.time()
+        "timestamp": time.time(),
     }
+
 
 # Prometheus metrics endpoint
 @app.get("/metrics")
 async def metrics():
     """Prometheus metrics endpoint."""
     from fastapi import Response
-    
+
     metrics_data = generate_metrics()
     return Response(content=metrics_data, media_type=CONTENT_TYPE_LATEST)
+
 
 # Alternative metrics endpoint with JSON format
 @app.get("/metrics/json")
@@ -264,4 +280,4 @@ if __name__ == "__main__":
         port=8000,
         reload=settings.DEBUG,
         log_level="info",
-    ) 
+    )

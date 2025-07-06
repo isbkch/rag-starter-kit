@@ -14,4 +14,4 @@ __all__ = [
     "PineconeDB",
     "WeaviateDB",
     "VectorDBFactory",
-] 
+]
