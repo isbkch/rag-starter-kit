@@ -1,0 +1,607 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "RAG Platform - Detailed Metrics",
+    "description": "Comprehensive monitoring dashboard for the Enterprise RAG Platform",
+    "tags": ["rag", "platform", "detailed", "search", "documents"],
+    "style": "dark",
+    "timezone": "browser",
+    "editable": true,
+    "hideControls": false,
+    "graphTooltip": 1,
+    "panels": [
+      {
+        "id": 1,
+        "title": "Search Performance Metrics",
+        "type": "row",
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "id": 2,
+        "title": "Search Latency by Type",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(search_duration_seconds_bucket{search_type=\"hybrid\"}[5m]))",
+            "legendFormat": "Hybrid Search P95",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(search_duration_seconds_bucket{search_type=\"vector\"}[5m]))",
+            "legendFormat": "Vector Search P95",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(search_duration_seconds_bucket{search_type=\"keyword\"}[5m]))",
+            "legendFormat": "Keyword Search P95",
+            "refId": "C"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(search_duration_seconds_bucket[5m]))",
+            "legendFormat": "Overall P50",
+            "refId": "D"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 1
+        },
+        "yAxes": [
+          {
+            "label": "Seconds",
+            "min": 0,
+            "unit": "s"
+          },
+          {
+            "show": false
+          }
+        ],
+        "legend": {
+          "show": true,
+          "values": true,
+          "avg": true,
+          "current": true,
+          "max": true
+        }
+      },
+      {
+        "id": 3,
+        "title": "Search Operations Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(search_operations_total{search_type=\"hybrid\"}[5m])",
+            "legendFormat": "Hybrid Searches/sec",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(search_operations_total{search_type=\"vector\"}[5m])",
+            "legendFormat": "Vector Searches/sec",
+            "refId": "B"
+          },
+          {
+            "expr": "rate(search_operations_total{search_type=\"keyword\"}[5m])",
+            "legendFormat": "Keyword Searches/sec",
+            "refId": "C"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 1
+        },
+        "yAxes": [
+          {
+            "label": "Operations/sec",
+            "min": 0
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Document Management",
+        "type": "row",
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 9
+        }
+      },
+      {
+        "id": 5,
+        "title": "Document Counts by Status",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "documents_by_status{status=\"completed\"}",
+            "legendFormat": "Completed",
+            "refId": "A"
+          },
+          {
+            "expr": "documents_by_status{status=\"processing\"}",
+            "legendFormat": "Processing",
+            "refId": "B"
+          },
+          {
+            "expr": "documents_by_status{status=\"failed\"}",
+            "legendFormat": "Failed",
+            "refId": "C"
+          },
+          {
+            "expr": "documents_by_status{status=\"pending\"}",
+            "legendFormat": "Pending",
+            "refId": "D"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 0,
+          "y": 10
+        },
+        "options": {
+          "orientation": "vertical",
+          "textMode": "value_and_name",
+          "colorMode": "background",
+          "graphMode": "none",
+          "justifyMode": "center"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 10
+                },
+                {
+                  "color": "red",
+                  "value": 50
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "Document Processing Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(documents_processed_total[5m])",
+            "legendFormat": "Documents/sec",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(document_chunks_created_total[5m])",
+            "legendFormat": "Chunks/sec",
+            "refId": "B"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 8,
+          "y": 10
+        },
+        "yAxes": [
+          {
+            "label": "Rate",
+            "min": 0
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Document Processing Duration",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(document_processing_duration_seconds_bucket[5m]))",
+            "legendFormat": "P95 Processing Time",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(document_processing_duration_seconds_bucket[5m]))",
+            "legendFormat": "P50 Processing Time",
+            "refId": "B"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 16,
+          "y": 10
+        },
+        "yAxes": [
+          {
+            "label": "Seconds",
+            "min": 0,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Vector Database & Embeddings",
+        "type": "row",
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 18
+        }
+      },
+      {
+        "id": 9,
+        "title": "Vector Database Stats",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "vector_db_documents_total",
+            "legendFormat": "Total Documents",
+            "refId": "A"
+          },
+          {
+            "expr": "vector_db_embeddings_total",
+            "legendFormat": "Total Embeddings",
+            "refId": "B"
+          },
+          {
+            "expr": "vector_db_index_size_bytes",
+            "legendFormat": "Index Size",
+            "refId": "C"
+          }
+        ],
+        "gridPos": {
+          "h": 6,
+          "w": 8,
+          "x": 0,
+          "y": 19
+        },
+        "options": {
+          "orientation": "vertical",
+          "textMode": "value_and_name",
+          "colorMode": "value"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Index Size"
+              },
+              "properties": [
+                {
+                  "id": "unit",
+                  "value": "bytes"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": 10,
+        "title": "Embedding Generation Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(embeddings_generated_total[5m])",
+            "legendFormat": "Embeddings/sec",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(embedding_cache_hits_total[5m])",
+            "legendFormat": "Cache Hits/sec",
+            "refId": "B"
+          },
+          {
+            "expr": "rate(embedding_cache_misses_total[5m])",
+            "legendFormat": "Cache Misses/sec",
+            "refId": "C"
+          }
+        ],
+        "gridPos": {
+          "h": 6,
+          "w": 8,
+          "x": 8,
+          "y": 19
+        },
+        "yAxes": [
+          {
+            "label": "Operations/sec",
+            "min": 0
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "title": "Embedding Performance",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(embedding_generation_duration_seconds_bucket[5m]))",
+            "legendFormat": "P95 Generation Time",
+            "refId": "A"
+          },
+          {
+            "expr": "embedding_cache_hit_ratio",
+            "legendFormat": "Cache Hit Ratio",
+            "refId": "B"
+          }
+        ],
+        "gridPos": {
+          "h": 6,
+          "w": 8,
+          "x": 16,
+          "y": 19
+        },
+        "yAxes": [
+          {
+            "label": "Seconds / Ratio",
+            "min": 0
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "title": "System Resources",
+        "type": "row",
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 25
+        }
+      },
+      {
+        "id": 13,
+        "title": "API Response Times",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{endpoint=\"/api/v1/search\"}[5m]))",
+            "legendFormat": "Search API P95",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{endpoint=\"/api/v1/documents/upload\"}[5m]))",
+            "legendFormat": "Upload API P95",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{endpoint=\"/api/v1/documents\"}[5m]))",
+            "legendFormat": "Documents API P95",
+            "refId": "C"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 26
+        },
+        "yAxes": [
+          {
+            "label": "Seconds",
+            "min": 0,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "id": 14,
+        "title": "Queue & Background Jobs",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "celery_queue_length{queue=\"default\"}",
+            "legendFormat": "Queue Length",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(celery_tasks_total{status=\"success\"}[5m])",
+            "legendFormat": "Successful Tasks/sec",
+            "refId": "B"
+          },
+          {
+            "expr": "rate(celery_tasks_total{status=\"failure\"}[5m])",
+            "legendFormat": "Failed Tasks/sec",
+            "refId": "C"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 26
+        },
+        "yAxes": [
+          {
+            "label": "Count / Rate",
+            "min": 0
+          }
+        ]
+      },
+      {
+        "id": 15,
+        "title": "Alerts & Errors",
+        "type": "row",
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 34
+        }
+      },
+      {
+        "id": 16,
+        "title": "Error Rates by Endpoint",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total{status=~\"4..|5..\",endpoint=\"/api/v1/search\"}[5m])",
+            "legendFormat": "Search Errors/sec",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(http_requests_total{status=~\"4..|5..\",endpoint=\"/api/v1/documents/upload\"}[5m])",
+            "legendFormat": "Upload Errors/sec",
+            "refId": "B"
+          },
+          {
+            "expr": "rate(search_errors_total[5m])",
+            "legendFormat": "Search Operation Errors/sec",
+            "refId": "C"
+          },
+          {
+            "expr": "rate(document_processing_errors_total[5m])",
+            "legendFormat": "Processing Errors/sec",
+            "refId": "D"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 35
+        },
+        "yAxes": [
+          {
+            "label": "Errors/sec",
+            "min": 0
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [0.1],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "model": "A",
+                "params": ["5m", "now"]
+              },
+              "reducer": {
+                "params": [],
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "for": "2m",
+          "frequency": "30s",
+          "handler": 1,
+          "name": "High Error Rate Alert",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"],
+      "time_options": ["5m", "15m", "1h", "6h", "12h", "24h", "2d", "7d", "30d"]
+    },
+    "templating": {
+      "list": [
+        {
+          "allValue": null,
+          "current": {
+            "selected": false,
+            "text": "All",
+            "value": "$__all"
+          },
+          "datasource": "Prometheus",
+          "definition": "label_values(search_operations_total, search_type)",
+          "hide": 0,
+          "includeAll": true,
+          "label": "Search Type",
+          "multi": true,
+          "name": "search_type",
+          "options": [],
+          "query": "label_values(search_operations_total, search_type)",
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 0,
+          "tagValuesQuery": "",
+          "tags": [],
+          "tagsQuery": "",
+          "type": "query",
+          "useTags": false
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": "-- Grafana --",
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "type": "dashboard"
+        },
+        {
+          "datasource": "Prometheus",
+          "enable": true,
+          "expr": "increase(document_processing_errors_total[1m]) > 0",
+          "iconColor": "red",
+          "name": "Processing Errors",
+          "titleFormat": "Document Processing Error",
+          "tagKeys": "error_type",
+          "textFormat": "Error processing document: {{error_type}}"
+        }
+      ]
+    },
+    "refresh": "30s",
+    "schemaVersion": 30,
+    "version": 2,
+    "links": [
+      {
+        "icon": "external link",
+        "tags": [],
+        "title": "RAG Platform API",
+        "tooltip": "Link to API documentation",
+        "type": "link",
+        "url": "http://localhost:8080/docs"
+      }
+    ]
+  }
+}
