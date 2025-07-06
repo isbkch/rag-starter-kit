@@ -94,7 +94,7 @@ function Search() {
           {["hybrid", "vector", "keyword"].map((type) => (
             <button
               key={type}
-              onClick={() => setSearchType(type as any)}
+              onClick={() => setSearchType(type as "hybrid" | "vector" | "keyword")}
               className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                 searchType === type
                   ? "bg-blue-600 text-white"

@@ -25,13 +25,16 @@ export interface SearchResponse {
   metadata?: Record<string, unknown>;
 }
 
-export async function search(query: string): Promise<SearchResponse> {
+export async function search(
+  query: string,
+  searchType: "hybrid" | "vector" | "keyword" = "hybrid"
+): Promise<SearchResponse> {
   const res = await fetch("/api/v1/search/", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       query,
-      search_type: "hybrid",
+      search_type: searchType,
       limit: 10,
       min_score: 0.0,
     }),
