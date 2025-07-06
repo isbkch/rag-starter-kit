@@ -128,7 +128,7 @@ class SearchManager:
     ) -> SearchResponse:
         """Perform vector search."""
         min_score = kwargs.get('min_score', 0.0)
-        return self._vector_search.search(
+        return await self._vector_search.search(
             query=query,
             limit=limit,
             min_score=min_score,
@@ -143,7 +143,7 @@ class SearchManager:
     ) -> SearchResponse:
         """Perform keyword search."""
         min_score = kwargs.get('min_score', 0.0)
-        return self._keyword_search.search(
+        return await self._keyword_search.search(
             query=query,
             limit=limit,
             min_score=min_score
@@ -157,14 +157,17 @@ class SearchManager:
         **kwargs
     ) -> SearchResponse:
         """Perform hybrid search."""
+        vector_limit = kwargs.get('vector_limit', limit)
+        keyword_limit = kwargs.get('keyword_limit', limit)
+        
         return await self._hybrid_search.search(
             query=query,
             limit=limit,
             filters=filters,
             min_vector_score=kwargs.get('min_vector_score', 0.0),
             min_keyword_score=kwargs.get('min_keyword_score', 0.0),
-            vector_limit=kwargs.get('vector_limit'),
-            keyword_limit=kwargs.get('keyword_limit')
+            vector_limit=vector_limit,
+            keyword_limit=keyword_limit
         )
     
     async def index_documents(self, documents: List[Dict[str, Any]]):
@@ -176,10 +179,19 @@ class SearchManager:
             logger.info(f"Indexing {len(documents)} documents...")
             
             # Index in vector search (this will also handle vector DB storage)
-            await self._vector_search.index_documents(documents)
+            if self._vector_search and hasattr(self._vector_search, 'index_documents'):
+                await self._vector_search.index_documents(documents)
+            else:
+                logger.warning("Vector search engine not available for indexing")
             
             # Index in keyword search
-            self._keyword_search.index_documents(documents)
+            if self._keyword_search and hasattr(self._keyword_search, 'index_documents'):
+                result = self._keyword_search.index_documents(documents)
+                # Handle both sync and async keyword search implementations
+                if result is not None and hasattr(result, '__await__'):
+                    await result
+            else:
+                logger.warning("Keyword search engine not available for indexing")
             
             logger.info("Documents indexed successfully in all search engines")
             
