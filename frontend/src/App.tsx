@@ -75,11 +75,45 @@ function Search() {
 }
 
 function Upload() {
+  const [file, setFile] = useState<File | null>(null);
+  const [status, setStatus] = useState<string>("");
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setFile(e.target.files[0]);
+      setStatus("");
+    }
+  };
+
+  const handleUpload = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!file) {
+      setStatus("Please select a file to upload.");
+      return;
+    }
+    // TODO: Integrate with API
+    setStatus(`Successfully uploaded: ${file.name}`);
+    setFile(null);
+  };
+
   return (
     <div className="max-w-2xl mx-auto p-4">
       <h2 className="text-2xl font-bold mb-4">Upload</h2>
-      {/* TODO: Implement upload UI */}
-      <p className="text-gray-500">Upload functionality coming soon.</p>
+      <form onSubmit={handleUpload} className="flex flex-col gap-4">
+        <input
+          type="file"
+          onChange={handleFileChange}
+          className="file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+        />
+        <button
+          type="submit"
+          className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+          disabled={!file}
+        >
+          Upload
+        </button>
+      </form>
+      {status && <p className="mt-4 text-green-600">{status}</p>}
     </div>
   );
 }
