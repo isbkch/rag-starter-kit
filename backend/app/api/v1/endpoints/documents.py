@@ -24,12 +24,7 @@ MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 
 def get_document_processor() -> DocumentProcessor:
     """Get document processor instance."""
-    settings = get_settings()
-    return DocumentProcessor(
-        chunk_size=settings.CHUNK_SIZE,
-        chunk_overlap=settings.CHUNK_OVERLAP,
-        chunking_strategy=settings.CHUNKING_STRATEGY
-    )
+    return DocumentProcessor()
 
 async def get_search_manager_dep(settings: Settings = Depends(get_settings)) -> SearchManager:
     """Dependency to get search manager."""
@@ -80,23 +75,21 @@ async def upload_document(
             logger.info(f"Processing document: {file.filename}")
             processed_doc = await document_processor.process_document(
                 file_path=temp_file_path,
-                document_id=document_id,
-                title=file.filename,
-                source=file.filename
+                original_filename=file.filename,
+                generate_embeddings=True,
+                store_in_vector_db=True
             )
             
             # Prepare documents for indexing
             documents_for_indexing = []
             for chunk in processed_doc.chunks:
                 documents_for_indexing.append({
-                    'id': f"{document_id}_{chunk.chunk_index}",
+                    'id': chunk.id,
                     'content': chunk.content,
-                    'title': processed_doc.title,
-                    'source': processed_doc.source,
                     'metadata': {
-                        **processed_doc.metadata,
-                        'chunk_index': chunk.chunk_index,
-                        'document_id': document_id,
+                        **chunk.metadata,
+                        'document_id': processed_doc.id,
+                        'filename': file.filename,
                         'upload_time': datetime.utcnow().isoformat()
                     }
                 })
@@ -107,15 +100,14 @@ async def upload_document(
                 documents_for_indexing
             )
             
-            return DocumentUploadResponse(
-                document_id=document_id,
-                filename=file.filename,
-                file_size=file_size,
-                chunks_created=len(processed_doc.chunks),
-                processing_time=processed_doc.processing_time,
-                status="uploaded",
-                message="Document uploaded and processing started"
-            )
+            return {
+                "document_id": processed_doc.id,
+                "filename": file.filename,
+                "file_size": file_size,
+                "chunks_created": len(processed_doc.chunks),
+                "status": processed_doc.status.value,
+                "message": "Document uploaded and processed successfully"
+            }
             
         finally:
             # Clean up temporary file
@@ -234,4 +226,4 @@ async def reindex_document(
         
     except Exception as e:
         logger.error(f"Error reindexing document {document_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Error reindexing document: {str(e)}") 
+        raise HTTPException(status_code=500, detail=f"Error reindexing document: {str(e)}")
