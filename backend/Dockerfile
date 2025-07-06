@@ -34,6 +34,10 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Production stage
 FROM python:3.11-slim as production
 
+# Copy virtual environment and application files from builder stage
+COPY --from=builder /opt/venv /opt/venv
+COPY --from=builder /app /app
+
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
