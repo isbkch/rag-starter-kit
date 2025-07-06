@@ -1,0 +1,137 @@
+name: Feature Request
+description: Suggest an idea for this project
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature! Please provide as much detail as possible.
+        
+  - type: textarea
+    id: problem-statement
+    attributes:
+      label: Problem Statement
+      description: Is your feature request related to a problem? Please describe.
+      placeholder: A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+    validations:
+      required: true
+      
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the solution you'd like
+      placeholder: A clear and concise description of what you want to happen.
+    validations:
+      required: true
+      
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Describe any alternative solutions or features you've considered
+      placeholder: A clear and concise description of any alternative solutions or features you've considered.
+      
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      description: Which component would this feature affect?
+      options:
+        - Backend API
+        - Frontend UI
+        - Vector Database
+        - Document Processing
+        - Search Engine
+        - Monitoring/Grafana
+        - Docker/Infrastructure
+        - Documentation
+        - New Component
+        - Multiple Components
+    validations:
+      required: true
+      
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - Low - Nice to have
+        - Medium - Would improve workflow
+        - High - Critical for my use case
+    validations:
+      required: true
+      
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case
+      description: Describe your specific use case and how this feature would help
+      placeholder: |
+        - Who would use this feature?
+        - What problem does it solve?
+        - How would it improve the current workflow?
+    validations:
+      required: true
+      
+  - type: textarea
+    id: implementation-ideas
+    attributes:
+      label: Implementation Ideas (Optional)
+      description: If you have ideas about how this could be implemented, please share them
+      placeholder: |
+        - API changes needed
+        - UI/UX considerations
+        - Database schema changes
+        - Third-party integrations
+        
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria (Optional)
+      description: What would need to be true for this feature to be considered complete?
+      placeholder: |
+        - [ ] Feature requirement 1
+        - [ ] Feature requirement 2
+        - [ ] Tests are written
+        - [ ] Documentation is updated
+        
+  - type: checkboxes
+    id: impact
+    attributes:
+      label: Impact Assessment
+      description: Please consider the potential impact of this feature
+      options:
+        - label: This is a breaking change that would affect existing users
+          required: false
+        - label: This feature would require database migrations
+          required: false
+        - label: This feature would require new dependencies
+          required: false
+        - label: This feature affects security or privacy
+          required: false
+          
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our Code of Conduct
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true
+          
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      description: Please check the following before submitting
+      options:
+        - label: I have searched the existing issues to make sure this feature hasn't been requested
+          required: true
+        - label: I have read the project documentation to understand current capabilities
+          required: true
+        - label: I have considered how this feature aligns with the project's goals
+          required: false
