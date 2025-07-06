@@ -1,35 +1,26 @@
 import React, { useState } from "react";
-
-// Define types for search results and citations
-interface Citation {
-  id: number;
-  ref: string;
-  snippet: string;
-}
-
-interface SearchResult {
-  id: number;
-  text: string;
-  citations: Citation[];
-}
+import type { SearchResult, Citation } from "./api";
+import { search as searchApi, uploadDocument } from "./api";
 
 function Search() {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResult[]>([]); // Use explicit type
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Placeholder search handler
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Integrate with API
-    setResults([
-      {
-        id: 1,
-        text: "This is a sample result with a [1] citation.",
-        citations: [
-          { id: 1, ref: "Document 1", snippet: "Sample cited text." }
-        ]
-      }
-    ]);
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await searchApi(query);
+      setResults(res.results);
+    } catch {
+      setError("Search failed. Please try again.");
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -43,12 +34,13 @@ function Search() {
           value={query}
           onChange={e => setQuery(e.target.value)}
         />
-        <button className="bg-blue-600 text-white px-4 py-2 rounded" type="submit">
-          Search
+        <button className="bg-blue-600 text-white px-4 py-2 rounded" type="submit" disabled={loading}>
+          {loading ? "Searching..." : "Search"}
         </button>
       </form>
       <div>
-        {results.length === 0 ? (
+        {error && <p className="text-red-600 mb-2">{error}</p>}
+        {results.length === 0 && !loading && !error ? (
           <p className="text-gray-500">No results yet.</p>
         ) : (
           <ul className="space-y-4">
@@ -56,7 +48,7 @@ function Search() {
               <li key={result.id} className="border rounded p-4 bg-white shadow">
                 {/* Simple citation highlighting: replace [n] with superscript */}
                 <span dangerouslySetInnerHTML={{
-                  __html: result.text.replace(/\[(\d+)\]/g, '<sup class="text-blue-600 cursor-pointer">[$1]</sup>')
+                  __html: result.content.replace(/\[(\d+)\]/g, '<sup class="text-blue-600 cursor-pointer">[$1]</sup>')
                 }} />
                 <div className="mt-2 text-sm text-gray-600">
                   {result.citations.map((c: Citation) => (
@@ -77,23 +69,36 @@ function Search() {
 function Upload() {
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setFile(e.target.files[0]);
       setStatus("");
+      setError(null);
     }
   };
 
-  const handleUpload = (e: React.FormEvent) => {
+  const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) {
-      setStatus("Please select a file to upload.");
+      setStatus("");
+      setError("Please select a file to upload.");
       return;
     }
-    // TODO: Integrate with API
-    setStatus(`Successfully uploaded: ${file.name}`);
-    setFile(null);
+    setLoading(true);
+    setError(null);
+    setStatus("");
+    try {
+      const res = await uploadDocument(file);
+      setStatus(res.message || `Successfully uploaded: ${file.name}`);
+      setFile(null);
+    } catch {
+      setError("Upload failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -108,11 +113,12 @@ function Upload() {
         <button
           type="submit"
           className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
-          disabled={!file}
+          disabled={!file || loading}
         >
-          Upload
+          {loading ? "Uploading..." : "Upload"}
         </button>
       </form>
+      {error && <p className="mt-4 text-red-600">{error}</p>}
       {status && <p className="mt-4 text-green-600">{status}</p>}
     </div>
   );
