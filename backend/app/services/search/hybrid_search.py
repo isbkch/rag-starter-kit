@@ -138,14 +138,11 @@ class HybridSearchEngine:
         filters: Optional[Dict[str, Any]]
     ) -> SearchResponse:
         """Perform vector search asynchronously."""
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            self.executor,
-            self.vector_search.search,
-            query,
-            limit,
-            min_score,
-            filters
+        return await self.vector_search.search(
+            query=query,
+            limit=limit,
+            min_score=min_score,
+            filters=filters
         )
     
     async def _perform_keyword_search(
@@ -155,13 +152,10 @@ class HybridSearchEngine:
         min_score: float
     ) -> SearchResponse:
         """Perform keyword search asynchronously."""
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            self.executor,
-            self.keyword_search.search,
-            query,
-            limit,
-            min_score
+        return await self.keyword_search.search(
+            query=query,
+            limit=limit,
+            min_score=min_score
         )
     
     def _fuse_results(

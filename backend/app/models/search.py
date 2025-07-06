@@ -28,28 +28,44 @@ class SearchRequest(BaseModel):
 
 class SearchResult(BaseModel):
     """Individual search result model."""
-    id: str
-    document_id: str
-    chunk_id: str
     content: str
     score: float
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    source: str = Field(default="")
+    title: str = Field(default="")
+    context: str = Field(default="")
+    citations: List[Dict[str, Any]] = Field(default_factory=list)
     similarity_score: Optional[float] = None
     keyword_score: Optional[float] = None
-    metadata: Dict[str, Any] = Field(default_factory=dict)
     highlights: List[str] = Field(default_factory=list)
-    citations: List[Dict[str, Any]] = Field(default_factory=list)
+    
+    # Legacy fields for backward compatibility
+    id: Optional[str] = None
+    document_id: Optional[str] = None
+    chunk_id: Optional[str] = None
 
 
 class SearchResponse(BaseModel):
     """Search response model."""
     query: str
-    search_type: SearchType
+    search_type: str
     results: List[SearchResult]
     total_results: int
-    search_time_ms: float
+    search_time: float
+    metadata: Dict[str, Any] = Field(default_factory=dict)
     filters_applied: Optional[Dict[str, Any]] = None
     suggestions: List[str] = Field(default_factory=list)
     timestamp: datetime = Field(default_factory=datetime.utcnow)
+    error: Optional[str] = None
+    
+    # Legacy field for backward compatibility
+    search_time_ms: Optional[float] = None
+    
+    def __init__(self, **data):
+        # Handle backward compatibility
+        if 'search_time_ms' in data and 'search_time' not in data:
+            data['search_time'] = data['search_time_ms'] / 1000.0
+        super().__init__(**data)
 
 
 class SearchFilter(BaseModel):

@@ -8,20 +8,17 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from app.models.search import SearchResponse
-from app.services.search.search_manager import get_search_manager, SearchManager, SearchType
+from app.models.search import SearchResponse, SearchRequest, SearchType
+from app.services.search.search_manager import get_search_manager, SearchManager
 from app.core.config import get_settings, Settings
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-class SearchRequest(BaseModel):
-    """Search request model."""
-    query: str = Field(..., description="Search query")
-    search_type: SearchType = Field(SearchType.HYBRID, description="Type of search to perform")
-    limit: int = Field(10, ge=1, le=100, description="Maximum number of results")
-    min_score: float = Field(0.0, ge=0.0, le=1.0, description="Minimum relevance score")
-    filters: Optional[Dict[str, Any]] = Field(None, description="Search filters")
+# Extend SearchRequest for streaming support
+class StreamingSearchRequest(SearchRequest):
+    """Extended search request with streaming support."""
     stream: bool = Field(False, description="Enable streaming response")
 
 class SearchStatsRequest(BaseModel):
@@ -34,7 +31,7 @@ async def get_search_manager_dep(settings: Settings = Depends(get_settings)) -> 
 
 @router.post("/", response_model=SearchResponse)
 async def search(
-    request: SearchRequest,
+    request: StreamingSearchRequest,
     search_manager: SearchManager = Depends(get_search_manager_dep)
 ):
     """Perform search with optional streaming."""
@@ -50,9 +47,9 @@ async def search(
             response = await search_manager.search(
                 query=request.query,
                 search_type=request.search_type,
-                limit=request.limit,
+                limit=request.max_results,
                 filters=request.filters,
-                min_score=request.min_score
+                min_score=request.similarity_threshold
             )
             return response
             
@@ -60,7 +57,7 @@ async def search(
         logger.error(f"Error performing search: {e}")
         raise HTTPException(status_code=500, detail=f"Search error: {str(e)}")
 
-async def stream_search_results(search_manager: SearchManager, request: SearchRequest):
+async def stream_search_results(search_manager: SearchManager, request: StreamingSearchRequest):
     """Stream search results as NDJSON."""
     try:
         # Send initial metadata
@@ -68,17 +65,17 @@ async def stream_search_results(search_manager: SearchManager, request: SearchRe
             "type": "metadata",
             "query": request.query,
             "search_type": request.search_type,
-            "limit": request.limit,
-            "timestamp": "2024-01-01T00:00:00Z"  # In production, use actual timestamp
+            "limit": request.max_results,
+            "timestamp": datetime.utcnow().isoformat() + "Z"
         }) + "\n"
         
         # Perform search
         response = await search_manager.search(
             query=request.query,
             search_type=request.search_type,
-            limit=request.limit,
+            limit=request.max_results,
             filters=request.filters,
-            min_score=request.min_score
+            min_score=request.similarity_threshold
         )
         
         # Stream each result
@@ -243,7 +240,7 @@ async def update_hybrid_weights(
 
 @router.post("/vector")
 async def vector_search(
-    request: SearchRequest,
+    request: StreamingSearchRequest,
     search_manager: SearchManager = Depends(get_search_manager_dep)
 ):
     """Perform vector-only search."""
@@ -256,7 +253,7 @@ async def vector_search(
 
 @router.post("/keyword")
 async def keyword_search(
-    request: SearchRequest,
+    request: StreamingSearchRequest,
     search_manager: SearchManager = Depends(get_search_manager_dep)
 ):
     """Perform keyword-only search."""

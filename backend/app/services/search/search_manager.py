@@ -267,16 +267,35 @@ class SearchManager:
     async def close(self):
         """Close all search engine connections."""
         try:
+            if self._vector_search:
+                await self._vector_search.cleanup()
+                logger.info("Vector search engine cleaned up")
+            
             if self._vector_db:
-                await self._vector_db.close()
+                await self._vector_db.disconnect()
+                logger.info("Vector database disconnected")
+            
+            if self._embedding_service and hasattr(self._embedding_service, 'close'):
+                await self._embedding_service.close()
+                logger.info("Embedding service closed")
             
             if self._hybrid_search and hasattr(self._hybrid_search, 'executor'):
                 self._hybrid_search.executor.shutdown(wait=True)
+                logger.info("Hybrid search executor shut down")
+            
+            # Reset initialization state
+            self._initialized = False
+            self._vector_search = None
+            self._keyword_search = None
+            self._hybrid_search = None
+            self._embedding_service = None
+            self._vector_db = None
             
             logger.info("Search manager closed successfully")
             
         except Exception as e:
             logger.error(f"Error closing search manager: {e}")
+            raise
 
 # Global search manager instance
 search_manager = None
@@ -292,5 +311,17 @@ async def get_search_manager(settings: Settings = None) -> SearchManager:
         
         search_manager = SearchManager(settings)
         await search_manager.initialize()
+    elif not search_manager._initialized:
+        # Re-initialize if closed
+        await search_manager.initialize()
     
     return search_manager
+
+async def close_search_manager():
+    """Close and cleanup global search manager."""
+    global search_manager
+    
+    if search_manager is not None:
+        await search_manager.close()
+        search_manager = None
+        logger.info("Global search manager closed and reset")

@@ -101,7 +101,7 @@ class KeywordSearchEngine:
             logger.error(f"Error indexing documents for keyword search: {e}")
             raise
     
-    def search(
+    async def search(
         self,
         query: str,
         limit: int = 10,

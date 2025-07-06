@@ -16,6 +16,8 @@ import uvicorn
 from app.core.config import settings
 from app.api.v1.api import api_router
 from app.services.search.search_manager import get_search_manager
+from app.core.rate_limiting import rate_limit_middleware, custom_rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 # Configure logging
 logging.basicConfig(
@@ -85,6 +87,12 @@ app.add_middleware(
 
 # Add compression middleware
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+# Add rate limiting middleware
+app.middleware("http")(rate_limit_middleware)
+
+# Add rate limit exception handler
+app.add_exception_handler(RateLimitExceeded, custom_rate_limit_exceeded_handler)
 
 # Request timing middleware
 @app.middleware("http")
