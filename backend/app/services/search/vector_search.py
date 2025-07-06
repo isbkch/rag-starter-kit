@@ -17,13 +17,19 @@ logger = logging.getLogger(__name__)
 class VectorSearchEngine:
     """Vector-based semantic search engine."""
     
-    def __init__(self):
-        self.vector_db = VectorDBFactory.get_vector_db()
-        self.embedding_service = EmbeddingService()
+    def __init__(self, vector_db=None, embedding_service=None, collection_name=None):
+        self.vector_db = vector_db
+        self.embedding_service = embedding_service
+        self.collection_name = collection_name
         self._connected = False
     
     async def initialize(self):
         """Initialize the search engine."""
+        if self.vector_db is None:
+            raise ValueError("Vector database not provided to VectorSearchEngine")
+        if self.embedding_service is None:
+            raise ValueError("Embedding service not provided to VectorSearchEngine")
+        
         if not self._connected:
             await self.vector_db.connect()
             self._connected = True
@@ -55,7 +61,7 @@ class VectorSearchEngine:
             await self.initialize()
             
             # Generate query embedding
-            query_embedding = await self.embedding_service.embed_text(query)
+            query_embedding = await self.embedding_service.get_embedding(query)
             
             # Perform vector search
             vector_results = await self.vector_db.search_vectors(
@@ -346,7 +352,7 @@ class VectorSearchEngine:
             await self.initialize()
             
             collection_stats = await self.vector_db.get_collection_stats()
-            embedding_stats = self.embedding_service.get_provider_info()
+            embedding_stats = await self.embedding_service.get_stats()
             
             return {
                 'vector_db': collection_stats,
@@ -362,4 +368,4 @@ class VectorSearchEngine:
         """Clean up resources."""
         if self._connected:
             await self.vector_db.disconnect()
-            self._connected = False 
+            self._connected = False

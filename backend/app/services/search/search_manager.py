@@ -42,16 +42,20 @@ class SearchManager:
             logger.info("Initializing search manager...")
             
             # Initialize vector database
-            self._vector_db = await VectorDBFactory.create_vector_db(
-                provider=self.settings.VECTOR_DB_PROVIDER,
-                settings=self.settings
+            self._vector_db = VectorDBFactory.create_vector_db(
+                provider=self.settings.VECTOR_DB_PROVIDER
             )
             
             # Initialize embedding service
-            self._embedding_service = EmbeddingService(
+            from app.services.search.embedding_service import get_embedding_service
+            api_key = self.settings.OPENAI_API_KEY
+            if not api_key:
+                raise ValueError("OpenAI API key is required for embedding service")
+            
+            self._embedding_service = await get_embedding_service(
                 provider=self.settings.EMBEDDING_PROVIDER,
                 model_name=self.settings.EMBEDDING_MODEL,
-                api_key=getattr(self.settings, f"{self.settings.EMBEDDING_PROVIDER.upper()}_API_KEY", None),
+                api_key=api_key,
                 cache_embeddings=self.settings.CACHE_EMBEDDINGS,
                 batch_size=self.settings.EMBEDDING_BATCH_SIZE
             )
@@ -277,4 +281,4 @@ async def get_search_manager(settings: Settings = None) -> SearchManager:
         search_manager = SearchManager(settings)
         await search_manager.initialize()
     
-    return search_manager 
+    return search_manager
