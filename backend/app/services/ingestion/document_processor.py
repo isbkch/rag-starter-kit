@@ -17,6 +17,8 @@ from app.models.documents import (
 )
 from app.services.ingestion.text_extractor import TextExtractor
 from app.services.ingestion.chunk_processor import ChunkProcessor, ChunkingConfig
+from app.services.search.embedding_service import get_embedding_service
+from app.services.vectordb.factory import VectorDBFactory
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -37,6 +39,8 @@ class DocumentProcessor:
         chunking_strategy: str = 'recursive',
         chunking_config: Optional[ChunkingConfig] = None,
         extract_metadata: bool = True,
+        generate_embeddings: bool = True,
+        store_in_vector_db: bool = True,
     ) -> Document:
         """
         Process a document through the complete ingestion pipeline.
@@ -48,11 +52,14 @@ class DocumentProcessor:
             chunking_strategy: Strategy for text chunking
             chunking_config: Configuration for chunking
             extract_metadata: Whether to extract metadata
+            generate_embeddings: Whether to generate embeddings for chunks
+            store_in_vector_db: Whether to store chunks in vector database
             
         Returns:
             Processed Document object
         """
         document_id = str(uuid.uuid4())
+        document = None
         
         try:
             # Auto-detect document type if not provided
@@ -90,7 +97,15 @@ class DocumentProcessor:
                 chunking_config=chunking_config,
             )
             
-            # Step 4: Update document with results
+            # Step 4: Generate embeddings if requested
+            if generate_embeddings:
+                chunks = await self._generate_embeddings(chunks)
+            
+            # Step 5: Store in vector database if requested
+            if store_in_vector_db and generate_embeddings:
+                await self._store_in_vector_db(chunks)
+            
+            # Step 6: Update document with results
             document.chunks = chunks
             document.total_chunks = len(chunks)
             document.processed_chunks = len(chunks)
@@ -104,10 +119,11 @@ class DocumentProcessor:
         except Exception as e:
             logger.error(f"Failed to process document {document_id}: {e}")
             
-            # Update document with error status
-            document.status = DocumentStatus.FAILED
-            document.error_message = str(e)
-            document.updated_at = datetime.utcnow()
+            # Update document with error status if we have a document object
+            if document:
+                document.status = DocumentStatus.FAILED
+                document.error_message = str(e)
+                document.updated_at = datetime.utcnow()
             
             raise
     
@@ -187,6 +203,62 @@ class DocumentProcessor:
         except Exception as e:
             logger.error(f"Chunk processing failed for {document_id}: {e}")
             raise ValueError(f"Failed to process chunks: {e}")
+    
+    async def _generate_embeddings(self, chunks: List[DocumentChunk]) -> List[DocumentChunk]:
+        """Generate embeddings for document chunks."""
+        try:
+            # Get embedding service
+            embedding_service = await get_embedding_service()
+            
+            # Extract text content from chunks
+            chunk_texts = [chunk.content for chunk in chunks]
+            
+            logger.info(f"Generating embeddings for {len(chunk_texts)} chunks")
+            
+            # Generate embeddings in batches
+            embeddings = await embedding_service.get_embeddings(chunk_texts)
+            
+            # Assign embeddings to chunks
+            for chunk, embedding in zip(chunks, embeddings):
+                chunk.embedding = embedding
+                # Add embedding metadata
+                chunk.metadata.update({
+                    'embedding_model': embedding_service.model_name,
+                    'embedding_dimension': len(embedding),
+                    'embedding_generated_at': datetime.utcnow().isoformat(),
+                })
+            
+            logger.info(f"Successfully generated embeddings for {len(chunks)} chunks")
+            return chunks
+            
+        except Exception as e:
+            logger.error(f"Failed to generate embeddings: {e}")
+            raise ValueError(f"Failed to generate embeddings: {e}")
+    
+    async def _store_in_vector_db(self, chunks: List[DocumentChunk]) -> None:
+        """Store chunks in vector database."""
+        try:
+            # Get vector database instance
+            vector_db = VectorDBFactory.create_vector_db(
+                provider=settings.VECTOR_DB_PROVIDER
+            )
+            
+            # Connect to vector database
+            await vector_db.connect()
+            
+            logger.info(f"Storing {len(chunks)} chunks in vector database")
+            
+            # Store chunks using the base class helper method
+            chunk_ids = await vector_db.insert_document_chunks(chunks)
+            
+            logger.info(f"Successfully stored {len(chunk_ids)} chunks in vector database")
+            
+            # Disconnect from vector database
+            await vector_db.disconnect()
+            
+        except Exception as e:
+            logger.error(f"Failed to store chunks in vector database: {e}")
+            raise ValueError(f"Failed to store chunks in vector database: {e}")
     
     def validate_document(self, file_path: str) -> Dict[str, Any]:
         """
@@ -345,4 +417,4 @@ class DocumentProcessor:
             return {
                 'estimated_seconds': 30,  # Default estimate
                 'error': str(e),
-            } 
+            }

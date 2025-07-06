@@ -43,7 +43,7 @@ class ChromaDB(BaseVectorDB):
             )
             
             # Test connection
-            await self._client.heartbeat()
+            self._client.heartbeat()
             
             # Create or get collection
             await self._ensure_collection()
@@ -328,4 +328,4 @@ class ChromaDB(BaseVectorDB):
                 # Handle operators like {"$gt": 10}
                 where_clause[key] = value
         
-        return where_clause 
+        return where_clause
