@@ -2,7 +2,6 @@
 Core configuration module for the RAG platform.
 """
 
-import os
 from functools import lru_cache
 from typing import List, Optional
 

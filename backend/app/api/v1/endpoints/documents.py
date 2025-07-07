@@ -64,7 +64,7 @@ async def upload_document(
 
         file_ext = os.path.splitext(file.filename)[1].lower()
         if file_ext not in SUPPORTED_EXTENSIONS:
-            supported_types = ', '.join(SUPPORTED_EXTENSIONS)
+            supported_types = ", ".join(SUPPORTED_EXTENSIONS)
             raise HTTPException(
                 status_code=400,
                 detail=f"Unsupported file type. Supported types: {supported_types}",
@@ -76,7 +76,7 @@ async def upload_document(
         file.file.seek(0)  # Seek back to beginning
 
         if file_size > MAX_FILE_SIZE:
-            max_size_mb = MAX_FILE_SIZE // (1024*1024)
+            max_size_mb = MAX_FILE_SIZE // (1024 * 1024)
             raise HTTPException(
                 status_code=400,
                 detail=f"File too large. Maximum size: {max_size_mb}MB",

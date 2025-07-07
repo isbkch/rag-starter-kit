@@ -51,7 +51,8 @@ def retry_on_failure(max_retries: int = 3, delay: float = 1.0, backoff: float = 
 
                     wait_time = delay * (backoff**attempt)
                     logger.warning(
-                        f"Attempt {attempt + 1} failed for {func.__name__}, retrying in {wait_time:.1f}s: {e}"
+                        f"Attempt {attempt + 1} failed for {func.__name__}, "
+                        f"retrying in {wait_time:.1f}s: {e}"
                     )
                     await asyncio.sleep(wait_time)
 
@@ -206,7 +207,8 @@ class DocumentProcessor:
             document.updated_at = datetime.utcnow()
 
             logger.info(
-                f"Successfully processed document {document_id} with {len(chunks)} chunks"
+                f"Successfully processed document {document_id} with "
+                f"{len(chunks)} chunks"
             )
 
             # Record successful processing metrics
@@ -279,7 +281,8 @@ class DocumentProcessor:
             text_length = len(text)
             if text_length < 10:
                 logger.warning(
-                    f"Very short text extracted ({text_length} chars) from {document.filename}"
+                    f"Very short text extracted ({text_length} chars) from "
+                    f"{document.filename}"
                 )
 
             logger.debug(f"Extracted {text_length} characters from {document.filename}")
@@ -431,8 +434,10 @@ class DocumentProcessor:
 
             for i in range(0, len(chunk_texts), batch_size):
                 batch_texts = chunk_texts[i : i + batch_size]
+                batch_num = i // batch_size + 1
+                total_batches = (len(chunk_texts) + batch_size - 1) // batch_size
                 logger.debug(
-                    f"Processing embedding batch {i // batch_size + 1}/{(len(chunk_texts) + batch_size - 1) // batch_size}"
+                    f"Processing embedding batch {batch_num}/{total_batches}"
                 )
 
                 try:

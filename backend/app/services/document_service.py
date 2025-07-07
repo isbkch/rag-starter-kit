@@ -11,7 +11,6 @@ from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
 from app.models.database import Document, DocumentChunk
-from app.models.documents import DocumentStatus, DocumentType
 
 logger = logging.getLogger(__name__)
 
