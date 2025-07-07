@@ -390,7 +390,8 @@ class VectorSearchEngine:
                     vectors=processed_docs, collection_name=self.collection_name
                 )
                 logger.info(
-                    f"Successfully indexed {len(processed_docs)} documents in vector database"
+                    f"Successfully indexed {len(processed_docs)} documents in "
+                    f"vector database"
                 )
             else:
                 logger.warning("No valid documents to index in vector database")
