@@ -2,11 +2,10 @@
 Text extraction service for different document types.
 """
 
-import io
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 
 import markdown
 import pdfplumber
@@ -108,7 +107,10 @@ class PDFTextExtractor(BaseTextExtractor):
             # PDF date format: D:YYYYMMDDHHmmSSOHH'mm'
             if pdf_date.startswith("D:"):
                 date_str = pdf_date[2:16]  # Extract YYYYMMDDHHMMSS
-                return f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}T{date_str[8:10]}:{date_str[10:12]}:{date_str[12:14]}"
+                return (
+                    f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}T"
+                    f"{date_str[8:10]}:{date_str[10:12]}:{date_str[12:14]}"
+                )
         except Exception:
             pass
         return None
