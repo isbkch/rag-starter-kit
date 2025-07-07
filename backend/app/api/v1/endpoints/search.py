@@ -4,7 +4,6 @@ Search endpoints with streaming responses.
 import json
 import logging
 from datetime import datetime
-from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
@@ -194,14 +193,6 @@ async def search_health_check(
     """Perform health check on search components."""
     try:
         health = await search_manager.health_check()
-
-        # Set appropriate HTTP status based on health
-        status_code = 200
-        if health.get("status") == "degraded":
-            status_code = 206  # Partial Content
-        elif health.get("status") == "unhealthy":
-            status_code = 503  # Service Unavailable
-
         return health
 
     except Exception as e:
