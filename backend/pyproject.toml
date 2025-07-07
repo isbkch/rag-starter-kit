@@ -63,6 +63,13 @@ dependencies = [
     "psutil==5.9.6",
     # Production server
     "gunicorn==21.2.0",
+    "aiosqlite>=0.21.0",
+    "greenlet>=3.2.3",
+    "opentelemetry-exporter-jaeger>=1.21.0",
+    "opentelemetry-exporter-prometheus>=0.42b0",
+    "opentelemetry-instrumentation-httpx>=0.42b0",
+    "opentelemetry-instrumentation-sqlalchemy>=0.42b0",
+    "opentelemetry-instrumentation-redis>=0.42b0",
 ]
 
 [project.optional-dependencies]

@@ -108,7 +108,7 @@ class AdvancedSearchRequest(BaseModel):
     facets: List[str] = Field(default_factory=list)
     aggregations: List[SearchAggregation] = Field(default_factory=list)
     sort_by: Optional[str] = None
-    sort_order: str = Field(default="desc", regex="^(asc|desc)$")
+    sort_order: str = Field(default="desc", pattern="^(asc|desc)$")
     include_metadata: bool = True
     include_embeddings: bool = False
     highlight_fields: List[str] = Field(default_factory=list)

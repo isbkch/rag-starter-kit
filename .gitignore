@@ -5,3 +5,9 @@ GEMINI1.md
 backend/app/__pycache__
 backend/app/core/__pycache__
 backend/tests/__pycache__
+backend/app/models/__pycache__
+backend/app/api/v1/__pycache__
+backend/app/api/v1/endpoints/__pycache__
+backend/app/services/ingestion/__pycache__
+backend/app/services/__pycache__
+backend/app/api/__pycache__

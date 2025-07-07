@@ -34,7 +34,7 @@ class Document(Base):
     processing_time = Column(Float, nullable=True)
 
     # Content metadata
-    metadata = Column(JSON, nullable=True)
+    metadata_ = Column(JSON, nullable=True)
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -67,7 +67,7 @@ class DocumentChunk(Base):
     chunk_size = Column(Integer, nullable=False)
     start_char = Column(Integer, nullable=True)
     end_char = Column(Integer, nullable=True)
-    metadata = Column(JSON, nullable=True)
+    metadata_ = Column(JSON, nullable=True)
 
     # Vector database references
     vector_id = Column(String(255), nullable=True, index=True)
@@ -146,7 +146,7 @@ class SearchResult(Base):
     context = Column(Text, nullable=True)
 
     # Additional metadata
-    metadata = Column(JSON, nullable=True)
+    metadata_ = Column(JSON, nullable=True)
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

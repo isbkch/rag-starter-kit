@@ -112,6 +112,13 @@ class DocumentProcessingResponse(BaseModel):
     error_message: Optional[str] = None
 
 
+class DocumentResponse(BaseModel):
+    """Single document response model."""
+
+    document: Document
+    message: Optional[str] = None
+
+
 class DocumentListResponse(BaseModel):
     """Document list response model."""
 
