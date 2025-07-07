@@ -24,7 +24,7 @@ class TestHealthEndpoints:
 
     def test_detailed_health_check(self, client: TestClient):
         """Test detailed health check endpoint."""
-        with patch("app.api.v1.endpoints.health.get_detailed_health") as mock_health:
+        with patch("app.api.v1.endpoints.health.detailed_health_check") as mock_health:
             mock_health.return_value = {
                 "status": "healthy",
                 "database": "connected",

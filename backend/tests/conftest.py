@@ -8,12 +8,13 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 import pytest_asyncio
+from fastapi import FastAPI  # Import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.core.config import Settings
+from app.core.config import Settings, get_settings
 from app.main import app
 from app.models.database import Base
 from app.services.search.embedding_service import EmbeddingService
@@ -23,41 +24,18 @@ from app.services.vectordb.base import VectorDBConfig
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
 
-class TestSettings(Settings):
-    """Test settings override."""
-
-    SECRET_KEY: str = "test-secret-key-for-testing"
-    DATABASE_URL: str = TEST_DATABASE_URL
-    REDIS_URL: str = "redis://localhost:6379/15"  # Use different DB for tests
-
-    # Test OpenAI settings
-    OPENAI_API_KEY: str = "test-openai-key"
-
-    # Vector DB settings for tests
-    VECTOR_DB_PROVIDER: str = "chroma"
-    VECTOR_DB_COLLECTION: str = "test_collection"
-
-    # Disable rate limiting in tests
-    ENABLE_RATE_LIMITING: bool = False
-
-    # Test-specific settings
-    TESTING: bool = True
-    DEBUG: bool = True  # Disable TrustedHostMiddleware in tests
-    LOG_LEVEL: str = "DEBUG"
+@pytest.fixture(name="test_settings")
+def override_get_settings() -> Settings:
+    """Override the get_settings dependency for tests."""
+    return get_settings()
 
 
-@pytest.fixture(scope="session")
-def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
-    """Create an instance of the default event loop for the test session."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
-
-@pytest.fixture
-def test_settings() -> TestSettings:
-    """Test settings fixture."""
-    return TestSettings()
+@pytest.fixture(autouse=True)
+def override_app_dependencies(client: TestClient, test_settings: Settings):
+    """Override application dependencies for testing."""
+    client.app.dependency_overrides[get_settings] = lambda: test_settings
+    yield
+    client.app.dependency_overrides.clear()
 
 
 @pytest_asyncio.fixture

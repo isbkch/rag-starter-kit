@@ -15,7 +15,7 @@ from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 
 from app.api.v1.api import api_router
-from app.core.config import settings
+from app.core.config import get_settings, settings
 from app.core.metrics import (
     CONTENT_TYPE_LATEST,
     generate_metrics,
@@ -35,10 +35,18 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+from fastapi import Depends
+
+from app.core.config import Settings, get_settings
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
     logger.info("Starting Enterprise RAG Platform...")
+
+    # Get settings within the lifespan context
+    current_settings = get_settings()
 
     # Startup
     try:
@@ -47,11 +55,12 @@ async def lifespan(app: FastAPI):
         logger.info("OpenTelemetry tracing initialized")
 
         # Initialize search manager
-        search_manager = await get_search_manager(settings)
+        search_manager = await get_search_manager(current_settings)
         logger.info("Search manager initialized successfully")
 
         # Store in app state for access in endpoints
         app.state.search_manager = search_manager
+        app.state.settings = current_settings  # Store settings in app state
 
         logger.info("Application startup complete")
         yield
@@ -77,19 +86,19 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI application
 app = FastAPI(
-    title=settings.APP_NAME,
-    version=settings.APP_VERSION,
+    title=get_settings().APP_NAME,  # Use get_settings() here
+    version=get_settings().APP_VERSION,  # Use get_settings() here
     description="Enterprise-grade RAG platform with hybrid search capabilities",
-    docs_url="/docs" if settings.DEBUG else None,
-    redoc_url="/redoc" if settings.DEBUG else None,
+    docs_url="/docs" if get_settings().DEBUG else None,  # Use get_settings() here
+    redoc_url="/redoc" if get_settings().DEBUG else None,  # Use get_settings() here
     lifespan=lifespan,
 )
 
 # Add security middleware
-if not settings.DEBUG:
+if not get_settings().DEBUG:  # Use get_settings() here
     # Extract hostnames from CORS origins and add common test hosts
     allowed_hosts = []
-    for origin in settings.BACKEND_CORS_ORIGINS:
+    for origin in get_settings().BACKEND_CORS_ORIGINS:  # Use get_settings() here
         if origin.startswith("http://") or origin.startswith("https://"):
             # Extract hostname from URL
             from urllib.parse import urlparse
@@ -109,7 +118,7 @@ if not settings.DEBUG:
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.BACKEND_CORS_ORIGINS,
+    allow_origins=get_settings().BACKEND_CORS_ORIGINS,  # Use get_settings() here
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
@@ -131,6 +140,7 @@ async def add_process_time_header(request: Request, call_next):
     """Add processing time header and record metrics."""
     start_time = time.time()
     status_code = 200
+    current_settings = get_settings()  # Get settings here
 
     try:
         response = await call_next(request)
@@ -211,7 +221,9 @@ async def file_not_found_handler(request: Request, exc: FileNotFoundError):
 
 
 @app.exception_handler(Exception)
-async def general_exception_handler(request: Request, exc: Exception):
+async def general_exception_handler(
+    request: Request, exc: Exception, settings: Settings = Depends(get_settings)
+):  # Inject settings here
     """Handle general exceptions."""
     logger.error(
         f"Unhandled exception on {request.method} {request.url.path}: {exc}",
@@ -239,7 +251,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 
 # Root endpoint
 @app.get("/")
-async def root():
+async def root(settings: Settings = Depends(get_settings)):  # Inject settings here
     """Root endpoint with API information."""
     return {
         "message": "Enterprise RAG Platform API",
@@ -253,7 +265,9 @@ async def root():
 
 # Health check endpoint
 @app.get("/health")
-async def health_check():
+async def health_check(
+    settings: Settings = Depends(get_settings),
+):  # Inject settings here
     """Basic health check endpoint."""
     return {
         "status": "healthy",
@@ -282,7 +296,9 @@ async def metrics_json():
 
 
 # Include API router
-app.include_router(api_router, prefix=settings.API_V1_STR)
+app.include_router(
+    api_router, prefix=get_settings().API_V1_STR
+)  # Use get_settings() here
 
 # Instrument FastAPI for tracing
 instrument_fastapi(app)
@@ -293,7 +309,7 @@ if __name__ == "__main__":
         "app.main:app",
         host="0.0.0.0",
         port=8000,
-        reload=settings.DEBUG,
+        reload=get_settings().DEBUG,  # Use get_settings() here
         log_level="info",
     )
 # Test comment
