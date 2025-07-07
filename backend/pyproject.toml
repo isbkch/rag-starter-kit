@@ -34,7 +34,6 @@ dependencies = [
     "langchain==0.0.335",
     "langchain-openai==0.0.2",
     "openai>=1.6.1,<2.0.0",
-    "sentence-transformers==2.2.2",
     "elasticsearch==8.11.0",
     "faiss-cpu==1.11.0",
     "rank-bm25==0.2.2",
@@ -70,6 +69,9 @@ dependencies = [
     "opentelemetry-instrumentation-httpx>=0.42b0",
     "opentelemetry-instrumentation-sqlalchemy>=0.42b0",
     "opentelemetry-instrumentation-redis>=0.42b0",
+    "opentelemetry-semantic-conventions>=0.42b0",
+    "opentelemetry-semantic-conventions-ai>=0.4.10",
+    "sentence-transformers>=5.0.0",
 ]
 
 [project.optional-dependencies]

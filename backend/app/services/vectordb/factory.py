@@ -9,8 +9,9 @@ from app.core.config import settings
 
 from .base import BaseVectorDB, VectorDBConfig
 from .chroma_db import ChromaDB
-from .pinecone_db import PineconeDB
-from .weaviate_db import WeaviateDB
+
+# from .pinecone_db import PineconeDB  # Temporarily disabled due to API changes
+# from .weaviate_db import WeaviateDB  # Temporarily disabled due to API changes
 
 logger = logging.getLogger(__name__)
 
@@ -58,9 +59,9 @@ class VectorDBFactory:
         if provider == "chroma":
             return ChromaDB(config)
         elif provider == "pinecone":
-            return PineconeDB(config)
+            raise ValueError("Pinecone support temporarily disabled due to API changes")
         elif provider == "weaviate":
-            return WeaviateDB(config)
+            raise ValueError("Weaviate support temporarily disabled due to API changes")
         else:
             raise ValueError(f"Unsupported vector database provider: {provider}")
 

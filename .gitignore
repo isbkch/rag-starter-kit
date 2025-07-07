@@ -11,3 +11,5 @@ backend/app/api/v1/endpoints/__pycache__
 backend/app/services/ingestion/__pycache__
 backend/app/services/__pycache__
 backend/app/api/__pycache__
+backend/app/services/search/__pycache__
+backend/app/services/vectordb/__pycache__
