@@ -9,7 +9,6 @@ from typing import Any, Dict
 
 import psutil
 from prometheus_client import (
-    CONTENT_TYPE_LATEST,
     CollectorRegistry,
     Counter,
     Gauge,
