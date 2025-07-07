@@ -26,6 +26,7 @@ TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 class TestSettings(Settings):
     """Test settings override."""
 
+    SECRET_KEY: str = "test-secret-key-for-testing"
     DATABASE_URL: str = TEST_DATABASE_URL
     REDIS_URL: str = "redis://localhost:6379/15"  # Use different DB for tests
 

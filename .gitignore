@@ -2,3 +2,6 @@ CLAUDE.md
 GEMINI.md
 CLAUDE1.md
 GEMINI1.md
+backend/app/__pycache__
+backend/app/core/__pycache__
+backend/tests/__pycache__
