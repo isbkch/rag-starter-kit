@@ -8,9 +8,7 @@ from typing import Any, Dict, List, Optional
 
 from app.core.metrics import get_metrics_collector
 from app.models.search import SearchResponse, SearchResult, SearchType
-from app.services.search.embedding_service import EmbeddingService
 from app.services.vectordb.base import VectorSearchResult
-from app.services.vectordb.factory import VectorDBFactory
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +94,8 @@ class VectorSearchEngine:
 
             search_time = time.time() - start_time
             logger.info(
-                f"Vector search completed in {search_time:.2f}s, found {len(search_results)} results"
+                f"Vector search completed in {search_time:.2f}s, found "
+                f"{len(search_results)} results"
             )
 
             # Record successful vector search metrics
