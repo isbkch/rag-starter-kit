@@ -621,7 +621,8 @@ class DocumentProcessor:
             # Warn about very large files
             if file_size > settings.MAX_FILE_SIZE * 0.8:
                 validation_result["warnings"].append(
-                    f'File is quite large ({validation_result["file_info"]["size_mb"]} MB), '
+                    f"File is quite large "
+                    f'({validation_result["file_info"]["size_mb"]} MB), '
                     f"processing may take time"
                 )
 

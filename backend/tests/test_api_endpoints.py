@@ -210,7 +210,8 @@ class TestDocumentEndpoints:
     def test_delete_document_not_found(self, client: TestClient):
         """Test deleting non-existent document."""
         with patch(
-            "app.services.ingestion.document_processor.DocumentProcessor.delete_document"
+            "app.services.ingestion.document_processor.DocumentProcessor."
+            "delete_document"
         ) as mock_delete:
             mock_delete.return_value = False
 

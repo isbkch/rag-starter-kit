@@ -9,7 +9,6 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -161,13 +160,15 @@ def sample_documents():
         {
             "id": "doc1",
             "title": "Introduction to Machine Learning",
-            "content": "Machine learning is a subset of artificial intelligence that focuses on algorithms that can learn from data.",
+            "content": "Machine learning is a subset of artificial intelligence "
+            "that focuses on algorithms that can learn from data.",
             "metadata": {"author": "John Doe", "category": "AI"},
         },
         {
             "id": "doc2",
             "title": "Deep Learning Fundamentals",
-            "content": "Deep learning uses neural networks with multiple layers to model and understand complex patterns in data.",
+            "content": "Deep learning uses neural networks with multiple layers "
+            "to model and understand complex patterns in data.",
             "metadata": {"author": "Jane Smith", "category": "Deep Learning"},
         },
     ]
@@ -222,7 +223,7 @@ def sample_search_query():
 @pytest_asyncio.fixture
 async def setup_test_data(db_session, sample_documents):
     """Set up test data in the database."""
-    from app.models.database import Document, DocumentChunk
+    from app.models.database import Document
 
     # Add documents
     for doc_data in sample_documents:

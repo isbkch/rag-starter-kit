@@ -5,7 +5,7 @@ Text extraction service for different document types.
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Optional
 
 import markdown
 import pdfplumber
