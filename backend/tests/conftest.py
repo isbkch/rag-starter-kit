@@ -42,6 +42,7 @@ class TestSettings(Settings):
 
     # Test-specific settings
     TESTING: bool = True
+    DEBUG: bool = True  # Disable TrustedHostMiddleware in tests
     LOG_LEVEL: str = "DEBUG"
 
 

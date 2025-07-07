@@ -87,9 +87,24 @@ app = FastAPI(
 
 # Add security middleware
 if not settings.DEBUG:
-    app.add_middleware(
-        TrustedHostMiddleware, allowed_hosts=settings.BACKEND_CORS_ORIGINS
-    )
+    # Extract hostnames from CORS origins and add common test hosts
+    allowed_hosts = []
+    for origin in settings.BACKEND_CORS_ORIGINS:
+        if origin.startswith("http://") or origin.startswith("https://"):
+            # Extract hostname from URL
+            from urllib.parse import urlparse
+
+            parsed = urlparse(origin)
+            if parsed.hostname:
+                allowed_hosts.append(parsed.hostname)
+        else:
+            # Assume it's already a hostname
+            allowed_hosts.append(origin)
+
+    # Add common test hosts
+    allowed_hosts.extend(["testserver", "localhost", "127.0.0.1"])
+
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
 
 # Add CORS middleware
 app.add_middleware(
