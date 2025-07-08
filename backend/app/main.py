@@ -7,7 +7,7 @@ import time
 from contextlib import asynccontextmanager
 
 import uvicorn
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
@@ -15,12 +15,8 @@ from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 
 from app.api.v1.api import api_router
-from app.core.config import get_settings, settings
-from app.core.metrics import (
-    CONTENT_TYPE_LATEST,
-    generate_metrics,
-    get_metrics_collector,
-)
+from app.core.config import Settings, get_settings
+from app.core.metrics import generate_metrics, get_metrics_collector
 from app.core.rate_limiting import (
     custom_rate_limit_exceeded_handler,
     rate_limit_middleware,
@@ -33,11 +29,6 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
-
-
-from fastapi import Depends
-
-from app.core.config import Settings, get_settings
 
 
 @asynccontextmanager
@@ -140,7 +131,8 @@ async def add_process_time_header(request: Request, call_next):
     """Add processing time header and record metrics."""
     start_time = time.time()
     status_code = 200
-    current_settings = get_settings()  # Get settings here
+    # Get settings here
+    get_settings()
 
     try:
         response = await call_next(request)
@@ -222,7 +214,7 @@ async def file_not_found_handler(request: Request, exc: FileNotFoundError):
 
 @app.exception_handler(Exception)
 async def general_exception_handler(
-    request: Request, exc: Exception, settings: Settings = Depends(get_settings)
+    request: Request, exc: Exception, app_settings: Settings = Depends(get_settings)
 ):  # Inject settings here
     """Handle general exceptions."""
     logger.error(
@@ -230,7 +222,7 @@ async def general_exception_handler(
         exc_info=True,
     )
 
-    if settings.DEBUG:
+    if app_settings.DEBUG:
         return JSONResponse(
             status_code=500,
             content={
@@ -251,28 +243,30 @@ async def general_exception_handler(
 
 # Root endpoint
 @app.get("/")
-async def root(settings: Settings = Depends(get_settings)):  # Inject settings here
+async def root(app_settings: Settings = Depends(get_settings)):  # Inject settings here
     """Root endpoint with API information."""
     return {
         "message": "Enterprise RAG Platform API",
-        "version": settings.APP_VERSION,
+        "version": app_settings.APP_VERSION,
         "status": "running",
-        "docs": "/docs" if settings.DEBUG else "Documentation disabled in production",
+        "docs": (
+            "/docs" if app_settings.DEBUG else "Documentation disabled in production"
+        ),
         "health": "/health",
-        "api_base": settings.API_V1_STR,
+        "api_base": app_settings.API_V1_STR,
     }
 
 
 # Health check endpoint
 @app.get("/health")
 async def health_check(
-    settings: Settings = Depends(get_settings),
+    app_settings: Settings = Depends(get_settings),
 ):  # Inject settings here
     """Basic health check endpoint."""
     return {
         "status": "healthy",
-        "app_name": settings.APP_NAME,
-        "version": settings.APP_VERSION,
+        "app_name": app_settings.APP_NAME,
+        "version": app_settings.APP_VERSION,
         "timestamp": time.time(),
     }
 
@@ -284,7 +278,9 @@ async def metrics():
     from fastapi import Response
 
     metrics_data = generate_metrics()
-    return Response(content=metrics_data, media_type=CONTENT_TYPE_LATEST)
+    return Response(
+        content=metrics_data, media_type="text/plain; version=0.0.4; charset=utf-8"
+    )
 
 
 # Alternative metrics endpoint with JSON format

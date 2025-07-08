@@ -2,13 +2,11 @@
 Pytest configuration and fixtures for the RAG platform tests.
 """
 
-import asyncio
-from typing import AsyncGenerator, Generator
+from typing import AsyncGenerator
 from unittest.mock import AsyncMock, Mock
 
 import pytest
 import pytest_asyncio
-from fastapi import FastAPI  # Import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
