@@ -213,15 +213,14 @@ async def file_not_found_handler(request: Request, exc: FileNotFoundError):
 
 
 @app.exception_handler(Exception)
-async def general_exception_handler(
-    request: Request, exc: Exception, app_settings: Settings = Depends(get_settings)
-):  # Inject settings here
+async def general_exception_handler(request: Request, exc: Exception):
     """Handle general exceptions."""
     logger.error(
         f"Unhandled exception on {request.method} {request.url.path}: {exc}",
         exc_info=True,
     )
 
+    app_settings = get_settings()
     if app_settings.DEBUG:
         return JSONResponse(
             status_code=500,
@@ -243,7 +242,7 @@ async def general_exception_handler(
 
 # Root endpoint
 @app.get("/")
-async def root(app_settings: Settings = Depends(get_settings)):  # Inject settings here
+async def root(app_settings: Settings = Depends(get_settings)):
     """Root endpoint with API information."""
     return {
         "message": "Enterprise RAG Platform API",
@@ -259,9 +258,7 @@ async def root(app_settings: Settings = Depends(get_settings)):  # Inject settin
 
 # Health check endpoint
 @app.get("/health")
-async def health_check(
-    app_settings: Settings = Depends(get_settings),
-):  # Inject settings here
+async def health_check(app_settings: Settings = Depends(get_settings)):
     """Basic health check endpoint."""
     return {
         "status": "healthy",
