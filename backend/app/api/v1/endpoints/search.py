@@ -4,10 +4,9 @@ Search endpoints with streaming responses.
 import json
 import logging
 from datetime import datetime
-from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.core.config import Settings, get_settings
@@ -194,19 +193,18 @@ async def search_health_check(
     """Perform health check on search components."""
     try:
         health = await search_manager.health_check()
-
-        # Set appropriate HTTP status based on health
         status_code = 200
         if health.get("status") == "degraded":
             status_code = 206  # Partial Content
         elif health.get("status") == "unhealthy":
             status_code = 503  # Service Unavailable
-
-        return health
+        return JSONResponse(content=health, status_code=status_code)
 
     except Exception as e:
         logger.error(f"Error performing search health check: {e}")
-        return {"status": "unhealthy", "error": str(e)}
+        return JSONResponse(
+            content={"status": "unhealthy", "error": str(e)}, status_code=503
+        )
 
 
 @router.post("/reindex")

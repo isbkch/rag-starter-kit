@@ -464,7 +464,7 @@ async def create_default_admin():
             return
 
         # Create admin user
-        admin_user = await user_manager.create_user(
+        await user_manager.create_user(
             email=admin_email,
             username="admin",
             password=admin_password,

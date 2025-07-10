@@ -1,7 +1,6 @@
 """Alembic environment configuration for RAG platform database migrations."""
 
 import asyncio
-import os
 from logging.config import fileConfig
 
 from sqlalchemy import pool

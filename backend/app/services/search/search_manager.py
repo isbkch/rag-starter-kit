@@ -10,7 +10,6 @@ from app.core.config import Settings
 from app.core.metrics import get_metrics_collector
 from app.core.tracing import trace_search_operation
 from app.models.search import SearchResponse
-from app.services.search.embedding_service import EmbeddingService
 from app.services.search.hybrid_search import HybridSearchEngine
 from app.services.search.keyword_search import KeywordSearchEngine
 from app.services.search.vector_search import VectorSearchEngine

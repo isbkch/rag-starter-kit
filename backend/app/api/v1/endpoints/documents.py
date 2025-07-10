@@ -5,7 +5,6 @@ import hashlib
 import logging
 import os
 import tempfile
-import uuid
 from datetime import datetime
 from typing import List, Optional
 
@@ -65,9 +64,10 @@ async def upload_document(
 
         file_ext = os.path.splitext(file.filename)[1].lower()
         if file_ext not in SUPPORTED_EXTENSIONS:
+            supported_types = ", ".join(SUPPORTED_EXTENSIONS)
             raise HTTPException(
                 status_code=400,
-                detail=f"Unsupported file type. Supported types: {', '.join(SUPPORTED_EXTENSIONS)}",
+                detail=f"Unsupported file type. Supported types: {supported_types}",
             )
 
         # Check file size
@@ -76,9 +76,10 @@ async def upload_document(
         file.file.seek(0)  # Seek back to beginning
 
         if file_size > MAX_FILE_SIZE:
+            max_size_mb = MAX_FILE_SIZE // (1024 * 1024)
             raise HTTPException(
                 status_code=400,
-                detail=f"File too large. Maximum size: {MAX_FILE_SIZE // (1024*1024)}MB",
+                detail=f"File too large. Maximum size: {max_size_mb}MB",
             )
 
         # Read file content and generate hash

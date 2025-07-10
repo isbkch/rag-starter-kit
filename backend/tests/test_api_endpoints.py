@@ -16,11 +16,15 @@ class TestHealthEndpoints:
         """Test basic health check endpoint."""
         response = client.get("/health")
         assert response.status_code == 200
-        assert response.json() == {"status": "healthy"}
+        data = response.json()
+        assert data["status"] == "healthy"
+        assert "app_name" in data
+        assert "version" in data
+        assert "timestamp" in data
 
     def test_detailed_health_check(self, client: TestClient):
         """Test detailed health check endpoint."""
-        with patch("app.api.v1.endpoints.health.get_detailed_health") as mock_health:
+        with patch("app.api.v1.endpoints.health.detailed_health_check") as mock_health:
             mock_health.return_value = {
                 "status": "healthy",
                 "database": "connected",
@@ -210,7 +214,8 @@ class TestDocumentEndpoints:
     def test_delete_document_not_found(self, client: TestClient):
         """Test deleting non-existent document."""
         with patch(
-            "app.services.ingestion.document_processor.DocumentProcessor.delete_document"
+            "app.services.ingestion.document_processor.DocumentProcessor."
+            "delete_document"
         ) as mock_delete:
             mock_delete.return_value = False
 

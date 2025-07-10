@@ -3,7 +3,6 @@ Health check endpoints with detailed component monitoring.
 """
 import logging
 from datetime import datetime
-from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, HTTPException
 
