@@ -15,7 +15,9 @@ from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 
 from app.api.v1.api import api_router
+from app.core.auth import create_default_admin
 from app.core.config import Settings, get_settings
+from app.core.error_tracking import capture_exception, init_sentry
 from app.core.metrics import generate_metrics, get_metrics_collector
 from app.core.rate_limiting import (
     custom_rate_limit_exceeded_handler,
@@ -41,6 +43,10 @@ async def lifespan(app: FastAPI):
 
     # Startup
     try:
+        # Initialize Sentry for error tracking
+        init_sentry()
+        logger.info("Sentry error tracking initialized")
+
         # Initialize OpenTelemetry tracing
         init_tracing()
         logger.info("OpenTelemetry tracing initialized")
@@ -48,6 +54,10 @@ async def lifespan(app: FastAPI):
         # Initialize search manager
         search_manager = await get_search_manager(current_settings)
         logger.info("Search manager initialized successfully")
+
+        # Create default admin user if it doesn't exist
+        await create_default_admin()
+        logger.info("Default admin user check completed")
 
         # Store in app state for access in endpoints
         app.state.search_manager = search_manager
@@ -220,6 +230,20 @@ async def general_exception_handler(request: Request, exc: Exception):
         exc_info=True,
     )
 
+    # Capture exception to Sentry with request context
+    event_id = capture_exception(
+        exc,
+        context={
+            "request": {
+                "method": request.method,
+                "url": str(request.url),
+                "path": request.url.path,
+                "headers": dict(request.headers),
+            }
+        },
+        level="error",
+    )
+
     app_settings = get_settings()
     if app_settings.DEBUG:
         return JSONResponse(
@@ -228,6 +252,7 @@ async def general_exception_handler(request: Request, exc: Exception):
                 "error": "Internal Server Error",
                 "detail": str(exc),
                 "type": type(exc).__name__,
+                "sentry_event_id": event_id,
             },
         )
     else:
@@ -236,6 +261,7 @@ async def general_exception_handler(request: Request, exc: Exception):
             content={
                 "error": "Internal Server Error",
                 "detail": "An unexpected error occurred",
+                "sentry_event_id": event_id,
             },
         )
 

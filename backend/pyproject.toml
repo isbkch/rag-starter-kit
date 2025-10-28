@@ -54,6 +54,10 @@ dependencies = [
     # Rate limiting and caching
     "slowapi==0.1.9",
     "aiocache==0.12.2",
+    # Circuit breaker and resilience
+    "pybreaker==1.0.1",
+    # Error tracking
+    "sentry-sdk[fastapi]==1.39.2",
     # Utilities
     "python-dotenv==1.0.0",
     "click==8.1.7",

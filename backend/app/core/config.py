@@ -23,8 +23,27 @@ class Settings(BaseSettings):
     SECRET_KEY: str = Field(..., env="SECRET_KEY")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
 
+    # JWT Authentication
+    JWT_SECRET_KEY: Optional[str] = Field(default=None, env="JWT_SECRET_KEY")
+    JWT_ALGORITHM: str = Field(default="HS256", env="JWT_ALGORITHM")
+    JWT_EXPIRATION_MINUTES: int = Field(default=30, env="JWT_EXPIRATION_MINUTES")
+    DEFAULT_ADMIN_PASSWORD: Optional[str] = Field(
+        default=None, env="DEFAULT_ADMIN_PASSWORD"
+    )
+
+    # Error Tracking
+    SENTRY_DSN: Optional[str] = Field(default=None, env="SENTRY_DSN")
+    SENTRY_ENVIRONMENT: str = Field(default="development", env="SENTRY_ENVIRONMENT")
+    SENTRY_TRACES_SAMPLE_RATE: float = Field(
+        default=0.1, env="SENTRY_TRACES_SAMPLE_RATE"
+    )
+
     # Database
     DATABASE_URL: str = Field(..., env="DATABASE_URL")
+    DB_POOL_SIZE: int = Field(default=20, env="DB_POOL_SIZE")
+    DB_MAX_OVERFLOW: int = Field(default=40, env="DB_MAX_OVERFLOW")
+    DB_POOL_PRE_PING: bool = Field(default=True, env="DB_POOL_PRE_PING")
+    DB_POOL_RECYCLE: int = Field(default=3600, env="DB_POOL_RECYCLE")  # 1 hour
 
     # Redis
     REDIS_URL: str = Field(default="redis://localhost:6379", env="REDIS_URL")
@@ -100,6 +119,13 @@ class Settings(BaseSettings):
         default=["http://localhost:3000", "http://localhost:8080"],
         env="BACKEND_CORS_ORIGINS",
     )
+
+    def __init__(self, **kwargs):
+        """Initialize settings and set defaults."""
+        super().__init__(**kwargs)
+        # Use SECRET_KEY for JWT if JWT_SECRET_KEY not provided
+        if not self.JWT_SECRET_KEY:
+            self.JWT_SECRET_KEY = self.SECRET_KEY
 
     class Config:
         env_file = ".env"
