@@ -12,9 +12,10 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
-# Create database engine
+# Create database engine with explicit connection pooling configuration
 engine_kwargs = {
-    "pool_pre_ping": True,
+    "pool_pre_ping": settings.DB_POOL_PRE_PING,  # Enable connection health checks
+    "pool_recycle": settings.DB_POOL_RECYCLE,  # Recycle connections periodically
     "echo": settings.DEBUG,
 }
 
@@ -22,8 +23,8 @@ engine_kwargs = {
 if not settings.DATABASE_URL.startswith("sqlite"):
     engine_kwargs.update(
         {
-            "pool_size": 10,
-            "max_overflow": 20,
+            "pool_size": settings.DB_POOL_SIZE,  # Base connection pool size
+            "max_overflow": settings.DB_MAX_OVERFLOW,  # Max additional connections
         }
     )
 

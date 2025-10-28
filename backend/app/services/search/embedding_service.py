@@ -11,8 +11,10 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 import openai
 import redis.asyncio as redis
+from pybreaker import CircuitBreakerError
 from sentence_transformers import SentenceTransformer
 
+from app.core.circuit_breaker import async_circuit_breaker, openai_breaker
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -42,13 +44,17 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
             1536 if "ada-002" in model else 1536
         )  # Default for most models
 
+    @async_circuit_breaker(openai_breaker)
     async def get_embeddings(self, texts: List[str]) -> List[List[float]]:
-        """Get embeddings from OpenAI API."""
+        """Get embeddings from OpenAI API with circuit breaker protection."""
         try:
             response = await self.client.embeddings.create(
                 model=self.model, input=texts
             )
             return [embedding.embedding for embedding in response.data]
+        except CircuitBreakerError:
+            logger.error("OpenAI circuit breaker is open - service unavailable")
+            raise
         except Exception as e:
             logger.error(f"Error getting OpenAI embeddings: {e}")
             raise

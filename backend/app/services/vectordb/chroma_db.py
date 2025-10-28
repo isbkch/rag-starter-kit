@@ -9,7 +9,9 @@ from typing import Any, Dict, List, Optional
 import chromadb
 from chromadb.config import Settings
 from chromadb.utils import embedding_functions
+from pybreaker import CircuitBreakerError
 
+from app.core.circuit_breaker import async_circuit_breaker, vectordb_breaker
 from app.core.config import settings
 
 from .base import BaseVectorDB, VectorDBConfig, VectorSearchResult
@@ -118,6 +120,7 @@ class ChromaDB(BaseVectorDB):
         except Exception:
             return False
 
+    @async_circuit_breaker(vectordb_breaker)
     async def insert_vectors(
         self,
         vectors: List[List[float]],
@@ -125,7 +128,7 @@ class ChromaDB(BaseVectorDB):
         ids: Optional[List[str]] = None,
         collection_name: Optional[str] = None,
     ) -> List[str]:
-        """Insert vectors with metadata."""
+        """Insert vectors with metadata (protected by circuit breaker)."""
         try:
             collection = await self._get_collection(collection_name)
 
@@ -157,6 +160,7 @@ class ChromaDB(BaseVectorDB):
             logger.error(f"Failed to insert vectors: {e}")
             raise
 
+    @async_circuit_breaker(vectordb_breaker)
     async def search_vectors(
         self,
         query_vector: List[float],
@@ -164,7 +168,7 @@ class ChromaDB(BaseVectorDB):
         filters: Optional[Dict[str, Any]] = None,
         collection_name: Optional[str] = None,
     ) -> List[VectorSearchResult]:
-        """Search for similar vectors."""
+        """Search for similar vectors (protected by circuit breaker)."""
         try:
             collection = await self._get_collection(collection_name)
 
