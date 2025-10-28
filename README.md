@@ -18,7 +18,7 @@ A **production-ready** Retrieval-Augmented Generation (RAG) platform with enterp
 ### Enterprise Features ✅
 
 - **Database-Backed Document Management**: Full CRUD operations with metadata tracking
-- **Real-time Streaming Search**: Live results delivery with progress indicators  
+- **Real-time Streaming Search**: Live results delivery with progress indicators
 - **Multi-provider Vector Database Support**: ChromaDB, Pinecone, Weaviate with hot-swapping
 - **Advanced Text Chunking**: Multiple strategies including semantic and structure-aware
 - **Production Monitoring**: Grafana dashboards, Prometheus metrics, custom RAG analytics
@@ -27,6 +27,10 @@ A **production-ready** Retrieval-Augmented Generation (RAG) platform with enterp
 - **Multi-level Caching**: Embeddings, search results, and database query caching
 - **Background Processing**: Celery for async document processing and reindexing
 - **Comprehensive Error Handling**: Recovery mechanisms and detailed error tracking
+- **🆕 Circuit Breakers**: Resilience patterns for external API failures (OpenAI, Vector DBs)
+- **🆕 JWT Authentication**: Secure token-based auth with permission-based access control
+- **🆕 Sentry Integration**: Advanced error tracking with context enrichment
+- **🆕 Optimized Connection Pooling**: Explicit database pool configuration for scalability
 
 ## 🏗️ Architecture
 
@@ -90,13 +94,55 @@ A **production-ready** Retrieval-Augmented Generation (RAG) platform with enterp
 ### Monitoring & Observability
 
 - **OpenTelemetry**: Distributed tracing
-- **Prometheus**: Metrics collection  
+- **Prometheus**: Metrics collection
 - **Grafana**: Comprehensive dashboards with RAG-specific metrics ✅
 - **Custom Dashboards**: Search performance, document processing, system health ✅
 - **Alerting**: Automated alerts for error rates and performance issues ✅
 - **Structlog**: Structured logging
+- **🆕 Sentry**: Advanced error tracking with request context, breadcrumbs, and performance monitoring
+
+### Resilience & Security
+
+- **🆕 Circuit Breakers**: Prevent cascading failures with pybreaker (OpenAI, Vector DBs, Elasticsearch)
+- **🆕 JWT Authentication**: Token-based auth with user management and permissions
+- **🆕 API Key Support**: Alternative authentication method for service accounts
+- **Rate Limiting**: Protect against abuse with slowapi
+- **Input Validation**: Pydantic models for all API inputs
+- **Connection Pooling**: Optimized database connection management (20 base + 40 overflow)
 
 ## 🆕 Recent Major Improvements
+
+### ✅ Architectural Enhancements (High Priority - October 2025)
+
+**Resilience & Reliability**
+- **Circuit Breakers**: Implemented comprehensive circuit breaker pattern for all external APIs (OpenAI, Vector DBs, Elasticsearch) to prevent cascading failures
+- **Retry Mechanisms**: Exponential backoff with configurable retry policies for transient failures
+- **Graceful Degradation**: System continues operating when external services are unavailable
+
+**Security & Authentication**
+- **JWT Authentication System**: Enhanced token-based authentication with user management
+- **Permission-Based Access Control**: Role-based permissions for fine-grained authorization
+- **API Key Authentication**: Alternative auth method for service accounts and integrations
+- **Default Admin User**: Automatic creation on startup with secure password management
+
+**Observability & Monitoring**
+- **Sentry Integration**: Advanced error tracking with request context, breadcrumbs, and stack traces
+- **Performance Monitoring**: Transaction tracing with 10% sampling for production
+- **Context Enrichment**: Automatic capture of user info, request data, and custom tags
+- **Privacy-Aware**: Filters sensitive data (passwords, API keys) from error reports
+
+**Performance & Scalability**
+- **Explicit Connection Pooling**: PostgreSQL pool configuration (20 base, 40 overflow connections)
+- **Connection Health Checks**: Pre-ping validation to detect stale connections
+- **Automatic Recycling**: Hourly connection refresh to prevent timeout issues
+- **Production-Tuned**: Optimized settings for enterprise workloads
+
+**Testing & Quality**
+- **Comprehensive Test Coverage**: Full test suites for circuit breakers and authentication
+- **Integration Tests**: Validates behavior under failure scenarios
+- **Performance Tests**: Ensures retry backoff timing and pool behavior
+
+📖 **See [IMPROVEMENTS.md](IMPROVEMENTS.md) for detailed implementation documentation**
 
 ### ✅ Production-Ready Infrastructure
 
@@ -201,7 +247,18 @@ On macOS, you might encounter issues building `faiss-cpu` due to missing system 
     ```
 
 2.  **Ensure Correct Python Version**:
-    This project is configured to use Python 3.11. If you are using `pyenv` or similar tools, ensure your local Python version is set to 3.11.x. The `.python-version` file in the project root should be `3.11.9`.
+    **⚠️ IMPORTANT**: This project requires **Python 3.11**. Python 3.13 is not compatible due to numpy build issues.
+
+    If you are using `pyenv`:
+    ```bash
+    pyenv install 3.11.9
+    pyenv local 3.11.9
+    ```
+
+    Verify your Python version:
+    ```bash
+    python --version  # Should show Python 3.11.x
+    ```
 
 3.  **Recreate Virtual Environment (if necessary)**:
     If you've had previous installation attempts, it's best to clean and recreate the virtual environment:
@@ -212,11 +269,18 @@ On macOS, you might encounter issues building `faiss-cpu` due to missing system 
 
 4.  **Install Dependencies with `uv`**:
     The `tiktoken` library (a dependency of `openai`) might fail to build on newer Python versions due to `pyo3` compatibility. We've updated `faiss-cpu` to `1.11.0` and `numpy` to `1.26.0` in `backend/pyproject.toml` to address this.
-    To install all dependencies, including `faiss-cpu`, use `uv sync` with the `PYO3_USE_ABI3_FORWARD_COMPATIBILITY` environment variable:
+
+    To install all dependencies, including new additions (`pybreaker`, `sentry-sdk`):
     ```bash
     PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1 uv sync
     ```
-    This command will install all required packages, including `faiss-cpu` and `tiktoken`, leveraging pre-built wheels where available and ensuring compatibility.
+
+    This command will install all required packages, including:
+    - Circuit breaker support (`pybreaker`)
+    - Error tracking (`sentry-sdk[fastapi]`)
+    - All existing dependencies
+
+    Leveraging pre-built wheels where available and ensuring compatibility.
 
 
 2. **Install frontend dependencies**
@@ -251,9 +315,26 @@ On macOS, you might encounter issues building `faiss-cpu` due to missing system 
 DEBUG=false
 SECRET_KEY=your-secret-key-here
 
+# JWT Authentication (New)
+JWT_SECRET_KEY=  # Optional: defaults to SECRET_KEY if not set
+JWT_ALGORITHM=HS256
+JWT_EXPIRATION_MINUTES=30
+DEFAULT_ADMIN_PASSWORD=change-me-in-production
+
+# Error Tracking (New)
+SENTRY_DSN=  # Optional: add your Sentry DSN
+SENTRY_ENVIRONMENT=production
+SENTRY_TRACES_SAMPLE_RATE=0.1
+
 # Database
 DATABASE_URL=postgresql://user:password@localhost:5432/rag_platform
 REDIS_URL=redis://localhost:6379
+
+# Database Connection Pool (New)
+DB_POOL_SIZE=20
+DB_MAX_OVERFLOW=40
+DB_POOL_PRE_PING=true
+DB_POOL_RECYCLE=3600
 
 # Vector Database (choose one)
 VECTOR_DB_PROVIDER=chroma  # Options: chroma, pinecone, weaviate
@@ -304,12 +385,22 @@ CHUNK_OVERLAP=200
 - `GET /api/v1/search/suggestions` - Get search suggestions based on query
 - `POST /api/v1/search/stats` - Get search engine statistics and performance metrics
 
+### Authentication & Security 🆕
+
+- `POST /api/v1/auth/login` - Login with email/password, returns JWT token
+- `POST /api/v1/auth/register` - Register new user account
+- `POST /api/v1/auth/refresh` - Refresh access token using refresh token
+- `GET /api/v1/auth/me` - Get current user information
+- `POST /api/v1/auth/reset-password` - Reset user password
+
 ### Health & Monitoring ✅
 
 - `GET /health` - Basic health check
 - `GET /api/v1/health/detailed` - Detailed system health with database and vector DB status
+- `GET /api/v1/health/circuit-breakers` - Circuit breaker status for all external services 🆕
 - `POST /api/v1/search/health` - Search engine health check
 - `GET /api/v1/metrics` - Performance metrics and system stats
+- `GET /metrics` - Prometheus metrics endpoint
 
 ## 🎨 Frontend Features
 
@@ -498,6 +589,44 @@ cp .env.example .env
 - ✅ **Security**: Rate limiting, input validation, error handling
 - ✅ **Scalability**: Async processing, background tasks, caching
 - ✅ **Health Checks**: Comprehensive service monitoring
+- ✅ **🆕 Circuit Breakers**: Resilience patterns for external API failures
+- ✅ **🆕 Authentication**: JWT-based auth with permission system
+- ✅ **🆕 Error Tracking**: Sentry integration for production monitoring
+- ✅ **🆕 Connection Pooling**: Optimized database connection management
+
+### Pre-Production Configuration 🆕
+
+Before deploying to production, ensure you've configured:
+
+1. **Security Settings**:
+   ```bash
+   # Generate secure keys
+   SECRET_KEY=$(openssl rand -hex 32)
+   JWT_SECRET_KEY=$(openssl rand -hex 32)
+
+   # Set in production .env
+   DEFAULT_ADMIN_PASSWORD=<strong-unique-password>
+   ```
+
+2. **Error Tracking**:
+   ```bash
+   # Create Sentry project at sentry.io
+   # Copy DSN to environment
+   SENTRY_DSN=https://xxx@sentry.io/project-id
+   SENTRY_ENVIRONMENT=production
+   ```
+
+3. **Database Tuning**:
+   ```bash
+   # Tune based on your workload
+   DB_POOL_SIZE=40          # For high-traffic production
+   DB_MAX_OVERFLOW=80       # Total: 120 connections
+   ```
+
+4. **Authentication**:
+   - Change default admin password immediately after first deploy
+   - Configure user permissions for your team
+   - Set up API keys for service accounts
 
 ### Future Deployment Options
 
@@ -578,6 +707,10 @@ pytest -v
 
 # Run specific test file
 pytest tests/test_search.py
+
+# Run new feature tests 🆕
+pytest tests/core/test_circuit_breaker.py   # Circuit breaker tests
+pytest tests/core/test_auth.py              # Authentication tests
 ```
 
 ### Frontend Tests
@@ -692,6 +825,46 @@ curl https://api.openai.com/v1/models \
   -H "Authorization: Bearer $OPENAI_API_KEY"
 ```
 
+**Issue**: Circuit breaker is open 🆕
+
+```bash
+# Check circuit breaker status
+curl http://localhost:8000/api/v1/health/circuit-breakers
+
+# Circuit breakers open when external services fail repeatedly
+# Wait for timeout period (30-60 seconds) for automatic recovery
+# Or fix the underlying service issue (check OpenAI API, Vector DB connectivity)
+```
+
+**Issue**: Authentication failing 🆕
+
+```bash
+# Check if default admin user was created
+# Look for startup logs: "Default admin user check completed"
+
+# Verify JWT settings
+echo $JWT_SECRET_KEY  # Should be set or defaults to SECRET_KEY
+echo $JWT_EXPIRATION_MINUTES
+
+# Test authentication
+curl -X POST http://localhost:8000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "admin@rag-platform.com", "password": "admin123"}'
+```
+
+**Issue**: Sentry not reporting errors 🆕
+
+```bash
+# Verify Sentry DSN is set
+echo $SENTRY_DSN
+
+# Check initialization logs
+# Should see: "Sentry error tracking initialized"
+
+# If SENTRY_DSN is empty, Sentry is disabled (this is OK for development)
+# Get DSN from sentry.io project settings
+```
+
 #### Frontend Issues
 
 **Issue**: API calls fail with CORS errors
@@ -803,6 +976,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 🔗 Links
 
+- **[IMPROVEMENTS.md](IMPROVEMENTS.md)** - Detailed architectural improvements documentation 🆕
 - [Documentation](docs/)
 - [API Reference](http://localhost:8000/docs)
 - [Architecture Guide](docs/architecture/)
@@ -828,18 +1002,21 @@ This Enterprise RAG Platform has been **fully implemented** with all critical pr
 - Database-backed document lifecycle management with SQLAlchemy + Alembic
 - Fixed Docker port conflicts and production-ready configurations
 - Comprehensive environment management for dev/staging/production
+- **🆕 Optimized connection pooling** with health checks and automatic recycling
 
-### ✅ **Advanced Features Implemented**  
+### ✅ **Advanced Features Implemented**
 
 - Real-time streaming search with progressive result loading
 - Complete document management UI with filtering, pagination, and bulk operations
 - Professional React interface with modern navigation and error handling
+- **🆕 JWT authentication system** with user management and permissions
 
 ### ✅ **Production Monitoring**
 
 - Custom Grafana dashboards with RAG-specific metrics and alerts
 - Performance tracking for search latency, document processing, and system health
 - Automated alerting for error rates and performance degradation
+- **🆕 Sentry integration** for advanced error tracking with context enrichment
 
 ### ✅ **Enterprise-Grade Architecture**
 
@@ -847,8 +1024,20 @@ This Enterprise RAG Platform has been **fully implemented** with all critical pr
 - Multi-level caching for optimal performance at scale
 - Comprehensive error handling and recovery mechanisms
 - Security hardening with rate limiting and input validation
+- **🆕 Circuit breakers** preventing cascading failures from external APIs
+- **🆕 Retry mechanisms** with exponential backoff for transient failures
+
+### 🔒 **Security & Resilience** 🆕
+
+- Circuit breaker protection for OpenAI, Vector DBs, and Elasticsearch
+- JWT token-based authentication with configurable expiration
+- Permission-based access control for fine-grained authorization
+- API key authentication for service accounts
+- Privacy-aware error tracking filtering sensitive data
 
 **Ready for immediate deployment and enterprise use** 🚀
+
+📖 **For detailed implementation docs, see [IMPROVEMENTS.md](IMPROVEMENTS.md)**
 
 ---
 
