@@ -8,9 +8,8 @@ from typing import Any, Dict, Optional
 
 import redis.asyncio as redis
 from fastapi import HTTPException, Request, status
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
-from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 
 from app.core.config import settings

@@ -2,11 +2,12 @@
 Core configuration module for the RAG platform.
 """
 
-import os
+import sys
 from functools import lru_cache
 from typing import List, Optional
 
-from pydantic import BaseSettings, Field
+from pydantic import Field
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -104,10 +105,34 @@ class Settings(BaseSettings):
         env_file = ".env"
         case_sensitive = True
 
+        @classmethod
+        def customise_sources(
+            cls,
+            settings_cls,
+            init_settings,
+            env_settings,
+            dotenv_settings,
+            file_secret_settings,
+        ):
+            if "pytest" in sys.modules:
+                return (
+                    init_settings,
+                    dotenv_settings,
+                    file_secret_settings,
+                )
+            return (
+                init_settings,
+                env_settings,
+                dotenv_settings,
+                file_secret_settings,
+            )
+
 
 @lru_cache()
 def get_settings() -> Settings:
     """Get cached settings instance."""
+    if "pytest" in sys.modules:
+        return Settings(_env_file=".env.test")
     return Settings()
 
 

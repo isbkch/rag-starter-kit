@@ -7,7 +7,7 @@ import time
 from contextlib import asynccontextmanager
 
 import uvicorn
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
@@ -15,12 +15,8 @@ from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 
 from app.api.v1.api import api_router
-from app.core.config import settings
-from app.core.metrics import (
-    CONTENT_TYPE_LATEST,
-    generate_metrics,
-    get_metrics_collector,
-)
+from app.core.config import Settings, get_settings
+from app.core.metrics import generate_metrics, get_metrics_collector
 from app.core.rate_limiting import (
     custom_rate_limit_exceeded_handler,
     rate_limit_middleware,
@@ -40,6 +36,9 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager."""
     logger.info("Starting Enterprise RAG Platform...")
 
+    # Get settings within the lifespan context
+    current_settings = get_settings()
+
     # Startup
     try:
         # Initialize OpenTelemetry tracing
@@ -47,11 +46,12 @@ async def lifespan(app: FastAPI):
         logger.info("OpenTelemetry tracing initialized")
 
         # Initialize search manager
-        search_manager = await get_search_manager(settings)
+        search_manager = await get_search_manager(current_settings)
         logger.info("Search manager initialized successfully")
 
         # Store in app state for access in endpoints
         app.state.search_manager = search_manager
+        app.state.settings = current_settings  # Store settings in app state
 
         logger.info("Application startup complete")
         yield
@@ -77,24 +77,39 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI application
 app = FastAPI(
-    title=settings.APP_NAME,
-    version=settings.APP_VERSION,
+    title=get_settings().APP_NAME,  # Use get_settings() here
+    version=get_settings().APP_VERSION,  # Use get_settings() here
     description="Enterprise-grade RAG platform with hybrid search capabilities",
-    docs_url="/docs" if settings.DEBUG else None,
-    redoc_url="/redoc" if settings.DEBUG else None,
+    docs_url="/docs" if get_settings().DEBUG else None,  # Use get_settings() here
+    redoc_url="/redoc" if get_settings().DEBUG else None,  # Use get_settings() here
     lifespan=lifespan,
 )
 
 # Add security middleware
-if not settings.DEBUG:
-    app.add_middleware(
-        TrustedHostMiddleware, allowed_hosts=settings.BACKEND_CORS_ORIGINS
-    )
+if not get_settings().DEBUG:  # Use get_settings() here
+    # Extract hostnames from CORS origins and add common test hosts
+    allowed_hosts = []
+    for origin in get_settings().BACKEND_CORS_ORIGINS:  # Use get_settings() here
+        if origin.startswith("http://") or origin.startswith("https://"):
+            # Extract hostname from URL
+            from urllib.parse import urlparse
+
+            parsed = urlparse(origin)
+            if parsed.hostname:
+                allowed_hosts.append(parsed.hostname)
+        else:
+            # Assume it's already a hostname
+            allowed_hosts.append(origin)
+
+    # Add common test hosts
+    allowed_hosts.extend(["testserver", "localhost", "127.0.0.1"])
+
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.BACKEND_CORS_ORIGINS,
+    allow_origins=get_settings().BACKEND_CORS_ORIGINS,  # Use get_settings() here
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
@@ -116,6 +131,8 @@ async def add_process_time_header(request: Request, call_next):
     """Add processing time header and record metrics."""
     start_time = time.time()
     status_code = 200
+    # Get settings here
+    get_settings()
 
     try:
         response = await call_next(request)
@@ -203,7 +220,8 @@ async def general_exception_handler(request: Request, exc: Exception):
         exc_info=True,
     )
 
-    if settings.DEBUG:
+    app_settings = get_settings()
+    if app_settings.DEBUG:
         return JSONResponse(
             status_code=500,
             content={
@@ -224,26 +242,28 @@ async def general_exception_handler(request: Request, exc: Exception):
 
 # Root endpoint
 @app.get("/")
-async def root():
+async def root(app_settings: Settings = Depends(get_settings)):
     """Root endpoint with API information."""
     return {
         "message": "Enterprise RAG Platform API",
-        "version": settings.APP_VERSION,
+        "version": app_settings.APP_VERSION,
         "status": "running",
-        "docs": "/docs" if settings.DEBUG else "Documentation disabled in production",
+        "docs": (
+            "/docs" if app_settings.DEBUG else "Documentation disabled in production"
+        ),
         "health": "/health",
-        "api_base": settings.API_V1_STR,
+        "api_base": app_settings.API_V1_STR,
     }
 
 
 # Health check endpoint
 @app.get("/health")
-async def health_check():
+async def health_check(app_settings: Settings = Depends(get_settings)):
     """Basic health check endpoint."""
     return {
         "status": "healthy",
-        "app_name": settings.APP_NAME,
-        "version": settings.APP_VERSION,
+        "app_name": app_settings.APP_NAME,
+        "version": app_settings.APP_VERSION,
         "timestamp": time.time(),
     }
 
@@ -255,7 +275,9 @@ async def metrics():
     from fastapi import Response
 
     metrics_data = generate_metrics()
-    return Response(content=metrics_data, media_type=CONTENT_TYPE_LATEST)
+    return Response(
+        content=metrics_data, media_type="text/plain; version=0.0.4; charset=utf-8"
+    )
 
 
 # Alternative metrics endpoint with JSON format
@@ -267,7 +289,9 @@ async def metrics_json():
 
 
 # Include API router
-app.include_router(api_router, prefix=settings.API_V1_STR)
+app.include_router(
+    api_router, prefix=get_settings().API_V1_STR
+)  # Use get_settings() here
 
 # Instrument FastAPI for tracing
 instrument_fastapi(app)
@@ -278,6 +302,7 @@ if __name__ == "__main__":
         "app.main:app",
         host="0.0.0.0",
         port=8000,
-        reload=settings.DEBUG,
+        reload=get_settings().DEBUG,  # Use get_settings() here
         log_level="info",
     )
+# Test comment

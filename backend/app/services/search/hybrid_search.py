@@ -4,9 +4,7 @@ Hybrid search engine combining vector search and keyword search.
 import asyncio
 import logging
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Dict, List, Optional, Tuple
-
-import numpy as np
+from typing import Any, Dict, List, Optional
 
 from app.models.search import SearchResponse, SearchResult
 from app.services.search.keyword_search import KeywordSearchEngine

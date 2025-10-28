@@ -6,7 +6,6 @@ import logging
 import uuid
 from typing import Any, Dict, List, Optional
 
-import pinecone
 from pinecone import Pinecone, ServerlessSpec
 
 from app.core.config import settings

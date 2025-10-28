@@ -2,19 +2,17 @@
 Pytest configuration and fixtures for the RAG platform tests.
 """
 
-import asyncio
-from typing import AsyncGenerator, Generator
+from typing import AsyncGenerator
 from unittest.mock import AsyncMock, Mock
 
 import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.core.config import Settings
+from app.core.config import Settings, get_settings
 from app.main import app
 from app.models.database import Base
 from app.services.search.embedding_service import EmbeddingService
@@ -24,39 +22,18 @@ from app.services.vectordb.base import VectorDBConfig
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
 
-class TestSettings(Settings):
-    """Test settings override."""
-
-    DATABASE_URL: str = TEST_DATABASE_URL
-    REDIS_URL: str = "redis://localhost:6379/15"  # Use different DB for tests
-
-    # Test OpenAI settings
-    OPENAI_API_KEY: str = "test-openai-key"
-
-    # Vector DB settings for tests
-    VECTOR_DB_PROVIDER: str = "chroma"
-    VECTOR_DB_COLLECTION: str = "test_collection"
-
-    # Disable rate limiting in tests
-    ENABLE_RATE_LIMITING: bool = False
-
-    # Test-specific settings
-    TESTING: bool = True
-    LOG_LEVEL: str = "DEBUG"
+@pytest.fixture(name="test_settings")
+def override_get_settings() -> Settings:
+    """Override the get_settings dependency for tests."""
+    return get_settings()
 
 
-@pytest.fixture(scope="session")
-def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
-    """Create an instance of the default event loop for the test session."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
-
-@pytest.fixture
-def test_settings() -> TestSettings:
-    """Test settings fixture."""
-    return TestSettings()
+@pytest.fixture(autouse=True)
+def override_app_dependencies(client: TestClient, test_settings: Settings):
+    """Override application dependencies for testing."""
+    client.app.dependency_overrides[get_settings] = lambda: test_settings
+    yield
+    client.app.dependency_overrides.clear()
 
 
 @pytest_asyncio.fixture
@@ -161,13 +138,15 @@ def sample_documents():
         {
             "id": "doc1",
             "title": "Introduction to Machine Learning",
-            "content": "Machine learning is a subset of artificial intelligence that focuses on algorithms that can learn from data.",
+            "content": "Machine learning is a subset of artificial intelligence "
+            "that focuses on algorithms that can learn from data.",
             "metadata": {"author": "John Doe", "category": "AI"},
         },
         {
             "id": "doc2",
             "title": "Deep Learning Fundamentals",
-            "content": "Deep learning uses neural networks with multiple layers to model and understand complex patterns in data.",
+            "content": "Deep learning uses neural networks with multiple layers "
+            "to model and understand complex patterns in data.",
             "metadata": {"author": "Jane Smith", "category": "Deep Learning"},
         },
     ]
@@ -222,7 +201,7 @@ def sample_search_query():
 @pytest_asyncio.fixture
 async def setup_test_data(db_session, sample_documents):
     """Set up test data in the database."""
-    from app.models.database import Document, DocumentChunk
+    from app.models.database import Document
 
     # Add documents
     for doc_data in sample_documents:

@@ -90,7 +90,7 @@ class WeaviateDB(BaseVectorDB):
                         Property(name="created_at", data_type=DataType.TEXT),
                         Property(name="metadata", data_type=DataType.OBJECT),
                     ],
-                    vectorizer_config=Configure.Vectorizer.none(),  # We provide our own vectors
+                    vectorizer_config=Configure.Vectorizer.none(),
                 )
                 logger.info(f"Created new Weaviate collection: {collection_name}")
 

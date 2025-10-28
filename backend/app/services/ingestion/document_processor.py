@@ -51,7 +51,8 @@ def retry_on_failure(max_retries: int = 3, delay: float = 1.0, backoff: float = 
 
                     wait_time = delay * (backoff**attempt)
                     logger.warning(
-                        f"Attempt {attempt + 1} failed for {func.__name__}, retrying in {wait_time:.1f}s: {e}"
+                        f"Attempt {attempt + 1} failed for {func.__name__}, "
+                        f"retrying in {wait_time:.1f}s: {e}"
                     )
                     await asyncio.sleep(wait_time)
 
@@ -206,7 +207,8 @@ class DocumentProcessor:
             document.updated_at = datetime.utcnow()
 
             logger.info(
-                f"Successfully processed document {document_id} with {len(chunks)} chunks"
+                f"Successfully processed document {document_id} with "
+                f"{len(chunks)} chunks"
             )
 
             # Record successful processing metrics
@@ -279,7 +281,8 @@ class DocumentProcessor:
             text_length = len(text)
             if text_length < 10:
                 logger.warning(
-                    f"Very short text extracted ({text_length} chars) from {document.filename}"
+                    f"Very short text extracted ({text_length} chars) from "
+                    f"{document.filename}"
                 )
 
             logger.debug(f"Extracted {text_length} characters from {document.filename}")
@@ -431,9 +434,9 @@ class DocumentProcessor:
 
             for i in range(0, len(chunk_texts), batch_size):
                 batch_texts = chunk_texts[i : i + batch_size]
-                logger.debug(
-                    f"Processing embedding batch {i // batch_size + 1}/{(len(chunk_texts) + batch_size - 1) // batch_size}"
-                )
+                batch_num = i // batch_size + 1
+                total_batches = (len(chunk_texts) + batch_size - 1) // batch_size
+                logger.debug(f"Processing embedding batch {batch_num}/{total_batches}")
 
                 try:
                     batch_embeddings = await embedding_service.get_embeddings(
@@ -443,7 +446,7 @@ class DocumentProcessor:
                         batch_texts
                     ):
                         raise EmbeddingError(
-                            f"Embedding batch returned incorrect number of embeddings",
+                            "Embedding batch returned incorrect number of embeddings",
                             {
                                 "expected": len(batch_texts),
                                 "received": len(batch_embeddings)
@@ -455,7 +458,8 @@ class DocumentProcessor:
                     all_embeddings.extend(batch_embeddings)
                 except Exception as e:
                     raise EmbeddingError(
-                        f"Failed to generate embeddings for batch {i // batch_size + 1}: {e}",
+                        f"Failed to generate embeddings for batch "
+                        f"{i // batch_size + 1}: {e}",
                         {
                             "batch_index": i // batch_size,
                             "batch_size": len(batch_texts),
@@ -527,7 +531,8 @@ class DocumentProcessor:
             health = await vector_db.health_check()
             if health["status"] != "healthy":
                 raise VectorStorageError(
-                    f"Vector database is not healthy: {health.get('error', 'Unknown error')}",
+                    f"Vector database is not healthy: "
+                    f"{health.get('error', 'Unknown error')}",
                     {"health_status": health},
                 )
 
@@ -605,7 +610,8 @@ class DocumentProcessor:
             if file_size > settings.MAX_FILE_SIZE:
                 validation_result["is_valid"] = False
                 validation_result["errors"].append(
-                    f"File size ({file_size} bytes) exceeds maximum allowed size ({settings.MAX_FILE_SIZE} bytes)"
+                    f"File size ({file_size} bytes) exceeds maximum allowed size "
+                    f"({settings.MAX_FILE_SIZE} bytes)"
                 )
 
             if file_size == 0:
@@ -615,7 +621,9 @@ class DocumentProcessor:
             # Warn about very large files
             if file_size > settings.MAX_FILE_SIZE * 0.8:
                 validation_result["warnings"].append(
-                    f'File is quite large ({validation_result["file_info"]["size_mb"]} MB), processing may take time'
+                    f"File is quite large "
+                    f'({validation_result["file_info"]["size_mb"]} MB), '
+                    f"processing may take time"
                 )
 
             # Check file extension and type

@@ -2,13 +2,11 @@
 Redis-based caching service for embeddings, search results, and other data.
 """
 
-import asyncio
 import hashlib
 import json
 import logging
 import pickle
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 import redis.asyncio as redis
 from redis.asyncio import Redis

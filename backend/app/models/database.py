@@ -4,19 +4,8 @@ SQLAlchemy database models for the RAG platform.
 
 import uuid
 from datetime import datetime
-from typing import Any, Dict, Optional
 
-from sqlalchemy import (
-    JSON,
-    Boolean,
-    Column,
-    DateTime,
-    Float,
-    ForeignKey,
-    Integer,
-    String,
-    Text,
-)
+from sqlalchemy import JSON, Column, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -45,7 +34,7 @@ class Document(Base):
     processing_time = Column(Float, nullable=True)
 
     # Content metadata
-    metadata = Column(JSON, nullable=True)
+    metadata_ = Column(JSON, nullable=True)
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -78,7 +67,7 @@ class DocumentChunk(Base):
     chunk_size = Column(Integer, nullable=False)
     start_char = Column(Integer, nullable=True)
     end_char = Column(Integer, nullable=True)
-    metadata = Column(JSON, nullable=True)
+    metadata_ = Column(JSON, nullable=True)
 
     # Vector database references
     vector_id = Column(String(255), nullable=True, index=True)
@@ -91,7 +80,10 @@ class DocumentChunk(Base):
     document = relationship("Document", back_populates="chunks")
 
     def __repr__(self):
-        return f"<DocumentChunk(id={self.id}, document_id={self.document_id}, chunk_index={self.chunk_index})>"
+        return (
+            f"<DocumentChunk(id={self.id}, document_id={self.document_id}, "
+            f"chunk_index={self.chunk_index})>"
+        )
 
 
 class SearchQuery(Base):
@@ -122,7 +114,10 @@ class SearchQuery(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     def __repr__(self):
-        return f"<SearchQuery(id={self.id}, query='{self.query_text[:50]}...', type='{self.search_type}')>"
+        return (
+            f"<SearchQuery(id={self.id}, query='{self.query_text[:50]}...', "
+            f"type='{self.search_type}')>"
+        )
 
 
 class SearchResult(Base):
@@ -151,7 +146,7 @@ class SearchResult(Base):
     context = Column(Text, nullable=True)
 
     # Additional metadata
-    metadata = Column(JSON, nullable=True)
+    metadata_ = Column(JSON, nullable=True)
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -187,7 +182,10 @@ class EmbeddingCache(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     def __repr__(self):
-        return f"<EmbeddingCache(id={self.id}, model='{self.embedding_model}', hits={self.hit_count})>"
+        return (
+            f"<EmbeddingCache(id={self.id}, model='{self.embedding_model}', "
+            f"hits={self.hit_count})>"
+        )
 
 
 class SystemMetric(Base):
@@ -213,7 +211,10 @@ class SystemMetric(Base):
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 
     def __repr__(self):
-        return f"<SystemMetric(name='{self.metric_name}', value={self.value}, timestamp={self.timestamp})>"
+        return (
+            f"<SystemMetric(name='{self.metric_name}', value={self.value}, "
+            f"timestamp={self.timestamp})>"
+        )
 
 
 class JobStatus(Base):

@@ -4,7 +4,7 @@ Keyword search engine using BM25 algorithm for text-based search.
 import logging
 import re
 import string
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import nltk
 from nltk.corpus import stopwords

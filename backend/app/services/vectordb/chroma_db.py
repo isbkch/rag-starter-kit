@@ -50,7 +50,8 @@ class ChromaDB(BaseVectorDB):
             await self._ensure_collection()
 
             logger.info(
-                f"Connected to ChromaDB at {settings.CHROMA_HOST}:{settings.CHROMA_PORT}"
+                f"Connected to ChromaDB at "
+                f"{settings.CHROMA_HOST}:{settings.CHROMA_PORT}"
             )
 
         except Exception as e:
